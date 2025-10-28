@@ -394,7 +394,6 @@ def show_create_order_form():
         with col_submit2:
             submitted = st.form_submit_button(
                 "创建订单",
-                width='stretch',
                 type="primary"
             )
         

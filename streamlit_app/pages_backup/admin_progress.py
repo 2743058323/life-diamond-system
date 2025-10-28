@@ -312,7 +312,6 @@ def show_progress_update_form():
         with col_submit2:
             submitted = st.form_submit_button(
                 "更新进度",
-                width='stretch',
                 type="primary"
             )
         

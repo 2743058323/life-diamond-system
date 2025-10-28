@@ -47,7 +47,6 @@ def show_page():
                 
                 search_button = st.form_submit_button(
                     "查询订单",
-                    width='stretch',
                     type="primary"
                 )
                 

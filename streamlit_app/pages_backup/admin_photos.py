@@ -263,7 +263,6 @@ def show_upload_form():
         with col_submit2:
             submitted = st.form_submit_button(
                 "上传照片",
-                width='stretch',
                 type="primary"
             )
         
