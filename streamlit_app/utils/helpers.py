@@ -306,6 +306,21 @@ def apply_custom_css():
     """应用自定义CSS样式"""
     st.markdown("""
     <style>
+    /* 隐藏顶部导航栏 */
+    header[data-testid="stHeader"] {
+        display: none;
+    }
+    
+    /* 隐藏顶部工具栏 */
+    .stApp > header {
+        display: none;
+    }
+    
+    /* 调整主内容区域，避免被遮挡 */
+    .main .block-container {
+        padding-top: 1rem;
+    }
+    
     /* 主题色彩 */
     .main {
         background-color: #fafafa;
