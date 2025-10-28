@@ -38,7 +38,7 @@ def show_page():
         
         with st.form("search_order_form"):
             input_order_number = st.text_input("订单编号", placeholder="例如：ORD202401001")
-            submitted = st.form_submit_button("🔍 查询", width='stretch')
+            submitted = st.form_submit_button("🔍 查询")
             
             if submitted and input_order_number:
                 # 通过订单编号查找订单

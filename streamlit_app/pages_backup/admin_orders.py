@@ -523,7 +523,7 @@ def show_edit_order_form(order: dict):
         )
         
         # 提交按钮（只保留保存按钮在表单内）
-        if st.form_submit_button("💾 保存修改", width='stretch', type="primary"):
+        if st.form_submit_button("💾 保存修改", type="primary"):
             # 验证必填字段
             if not all([customer_name, customer_phone, diamond_type, diamond_size]):
                 st.error("请填写所有必填字段（标有 * 的字段）")

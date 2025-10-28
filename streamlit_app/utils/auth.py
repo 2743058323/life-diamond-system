@@ -44,12 +44,11 @@ class AuthManager:
                 with col_a:
                     login_button = st.form_submit_button(
                         "登录", 
-                        width='stretch',
                         type="primary"
                     )
                 
                 with col_b:
-                    if st.form_submit_button("忘记密码？", width='stretch'):
+                    if st.form_submit_button("忘记密码？"):
                         st.info("请联系系统管理员重置密码")
                 
                 if login_button:

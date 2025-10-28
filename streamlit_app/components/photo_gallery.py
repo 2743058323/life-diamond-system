@@ -173,9 +173,9 @@ def show_upload_modal(photo_service, order_id, progress_data, on_upload):
         # 提交按钮
         col1, col2 = st.columns(2)
         with col1:
-            submitted = st.form_submit_button("📤 上传照片", width='stretch')
+            submitted = st.form_submit_button("📤 上传照片")
         with col2:
-            cancelled = st.form_submit_button("❌ 取消", width='stretch')
+            cancelled = st.form_submit_button("❌ 取消")
         
         if cancelled:
             st.session_state.show_upload_modal = False

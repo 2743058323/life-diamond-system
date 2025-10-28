@@ -134,7 +134,7 @@ def show_complete_stage_form(progress_service, order_id, stage_id, stage_name, a
                 st.caption(f"...还有 {len(photos) - 3} 张照片")
         
         # 提交按钮
-        submitted = st.form_submit_button("✅ 确认完成此阶段", width='stretch')
+        submitted = st.form_submit_button("✅ 确认完成此阶段")
         
         if submitted:
             with st.spinner(f"正在完成 {stage_name}..."):
