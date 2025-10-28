@@ -28,18 +28,17 @@ class AuthManager:
                 
                 username = st.text_input(
                     "用户名",
-                    placeholder="请输入用户名",
-                    help="默认管理员账户：admin"
+                    placeholder="请输入用户名"
                 )
                 
                 password = st.text_input(
                     "密码",
                     type="password",
-                    placeholder="请输入密码",
-                    help="默认密码：admin123"
+                    placeholder="请输入密码"
                 )
                 
-                col_a, col_b = st.columns(2)
+                # 按钮行（居中对齐）
+                col_left, col_a, col_b, col_right = st.columns([1, 1, 1, 1])
                 
                 with col_a:
                     login_button = st.form_submit_button(
@@ -48,7 +47,7 @@ class AuthManager:
                     )
                 
                 with col_b:
-                    if st.form_submit_button("忘记密码？"):
+                    if st.form_submit_button("忘记密码？", type="secondary"):
                         st.info("请联系系统管理员重置密码")
                 
                 if login_button:
