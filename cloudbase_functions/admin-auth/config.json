@@ -1,0 +1,16 @@
+{
+  "name": "admin-auth",
+  "timeout": 30,
+  "memory": 256,
+  "runtime": "Nodejs16.13",
+  "triggers": [
+    {
+      "type": "http",
+      "path": "/api/admin/auth/login"
+    }
+  ],
+  "environment": {
+    "NODE_ENV": "production",
+    "JWT_SECRET": "${JWT_SECRET}"
+  }
+}

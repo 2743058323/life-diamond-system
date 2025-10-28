@@ -1,0 +1,15 @@
+{
+  "name": "customer-search",
+  "timeout": 30,
+  "memory": 256,
+  "runtime": "Nodejs16.13",
+  "triggers": [
+    {
+      "type": "http",
+      "path": "/api/customer/orders/search"
+    }
+  ],
+  "environment": {
+    "NODE_ENV": "production"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "photo-upload",
+  "version": "1.0.0",
+  "description": "照片上传云函数",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^1.6.0"
+  }
+}

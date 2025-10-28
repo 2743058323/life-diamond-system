@@ -1,0 +1,9 @@
+streamlit==1.28.1
+requests==2.31.0
+pandas==2.0.3
+plotly==5.15.0
+Pillow==10.0.0
+streamlit-option-menu==0.3.6
+jsonschema==4.17.3
+python-dateutil==2.8.2
+tencentcloud-sdk-python==3.0.1000

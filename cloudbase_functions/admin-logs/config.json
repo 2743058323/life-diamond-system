@@ -1,0 +1,8 @@
+{
+    "version": "1.0.0",
+    "name": "admin-logs",
+    "description": "操作日志查询",
+    "runtime": "Nodejs10.15",
+    "envVariables": []
+}
+

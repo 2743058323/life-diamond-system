@@ -1,0 +1,22 @@
+{
+  "name": "life-diamond-cloudbase-functions",
+  "version": "1.0.0",
+  "description": "生命钻石服务系统云函数",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cloudbase",
+    "life-diamond",
+    "order-management"
+  ],
+  "author": "MiniMax Agent",
+  "license": "MIT",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^2.17.0",
+    "bcrypt": "^5.1.0",
+    "jsonwebtoken": "^9.0.0",
+    "uuid": "^9.0.0"
+  }
+}

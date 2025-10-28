@@ -1,0 +1,23 @@
+{
+  "name": "role-permissions",
+  "runtime": "Nodejs10.15",
+  "handler": "index.main",
+  "timeout": 30,
+  "memorySize": 128,
+  "environment": {
+    "variables": {}
+  },
+  "triggers": [
+    {
+      "name": "role-permissions-trigger",
+      "type": "apigw",
+      "config": {
+        "path": "/api/admin/role-permissions",
+        "methods": ["GET", "POST"],
+        "auth": {
+          "enable": false
+        }
+      }
+    }
+  ]
+}

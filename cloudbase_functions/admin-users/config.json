@@ -1,0 +1,23 @@
+{
+  "name": "admin-users",
+  "runtime": "Nodejs10.15",
+  "handler": "index.main",
+  "timeout": 30,
+  "memorySize": 128,
+  "environment": {
+    "variables": {}
+  },
+  "triggers": [
+    {
+      "name": "admin-users-trigger",
+      "type": "apigw",
+      "config": {
+        "path": "/api/admin/users",
+        "methods": ["POST", "GET"],
+        "auth": {
+          "enable": false
+        }
+      }
+    }
+  ]
+}

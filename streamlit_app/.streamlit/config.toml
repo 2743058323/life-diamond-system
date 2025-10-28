@@ -1,0 +1,26 @@
+[server]
+headless = false
+port = 8501
+address = "0.0.0.0"
+enableCORS = false
+enableXsrfProtection = false
+enableWebsocketCompression = false
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+primaryColor = "#8B4B8C"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F0F2F6"
+textColor = "#262730"
+
+[runner]
+magicEnabled = true
+installTracer = false
+fixMatplotlib = true
+
+# 禁用页面导航
+[client]
+showErrorDetails = true
+showSidebarNavigation = false

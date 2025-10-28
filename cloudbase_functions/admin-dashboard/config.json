@@ -1,0 +1,16 @@
+{
+  "name": "admin-dashboard",
+  "timeout": 30,
+  "memory": 512,
+  "runtime": "Nodejs16.13",
+  "triggers": [
+    {
+      "type": "http",
+      "path": "/api/admin/dashboard/overview"
+    }
+  ],
+  "environment": {
+    "NODE_ENV": "production",
+    "JWT_SECRET": "${JWT_SECRET}"
+  }
+}

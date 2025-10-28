@@ -1,0 +1,16 @@
+{
+  "name": "admin-progress",
+  "timeout": 60,
+  "memory": 512,
+  "runtime": "Nodejs16.13",
+  "triggers": [
+    {
+      "type": "http",
+      "path": "/api/admin/orders/{order_id}/progress"
+    }
+  ],
+  "environment": {
+    "NODE_ENV": "production",
+    "JWT_SECRET": "${JWT_SECRET}"
+  }
+}
