@@ -85,17 +85,17 @@ def render_dashboard():
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("➕ 新建订单", width='stretch'):
+        if st.button("➕ 新建订单"):
             st.session_state.admin_page = "订单管理"
             st.rerun()
     
     with col2:
-        if st.button("📋 订单列表", width='stretch'):
+        if st.button("📋 订单列表"):
             st.session_state.admin_page = "订单管理"
             st.rerun()
     
     with col3:
-        if st.button("🔄 刷新数据", width='stretch'):
+        if st.button("🔄 刷新数据"):
             if 'dashboard_data' in st.session_state:
                 del st.session_state.dashboard_data
             st.rerun()

@@ -95,7 +95,7 @@ def show_photo_upload():
         )
     
     with col2:
-        if st.button("🔍 查询订单", width='stretch'):
+        if st.button("🔍 查询订单"):
             if search_query:
                 search_orders_for_photos(search_query)
             else:
@@ -421,7 +421,7 @@ def show_photo_management():
         )
     
     with col2:
-        if st.button("🔍 查询照片", width='stretch'):
+        if st.button("🔍 查询照片"):
             if photo_search_query:
                 st.info(f"正在查询“{photo_search_query}”的照片...")
                 st.warning("照片查询功能正在开发中")

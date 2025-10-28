@@ -82,7 +82,7 @@ def show_start_stage_button(progress_service, order_id, stage_id, stage_name, al
         st.caption("⚠️ 需要有进度更新权限才能开始阶段")
         return
     
-    if st.button(f"▶️ 开始此阶段", key=f"start_{stage_id}", width='stretch'):
+    if st.button(f"▶️ 开始此阶段", key=f"start_{stage_id}"):
         with st.spinner(f"正在开始 {stage_name}..."):
             result = progress_service.start_stage(order_id, stage_id)
         
@@ -129,7 +129,7 @@ def show_complete_stage_form(progress_service, order_id, stage_id, stage_name, a
             cols = st.columns(min(len(photos), 3))
             for i, photo in enumerate(photos[:3]):  # 最多预览3张
                 with cols[i % 3]:
-                    st.image(photo, caption=photo.name, width='stretch')
+                    st.image(photo, caption=photo.name)
             if len(photos) > 3:
                 st.caption(f"...还有 {len(photos) - 3} 张照片")
         

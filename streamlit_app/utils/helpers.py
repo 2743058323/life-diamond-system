@@ -209,7 +209,7 @@ def render_photo_gallery(photos_data: List[Dict[str, Any]], title: str = "制作
                         col_btn1, col_btn2 = st.columns(2)
                         
                         with col_btn1:
-                            if st.button(f"🔍 查看大图", key=f"view_{i}_{stage_name}", width='stretch'):
+                            if st.button(f"🔍 查看大图", key=f"view_{i}_{stage_name}"):
                                 st.image(photo.get("photo_url", ""), caption=photo.get("description", ""))
                         
                         with col_btn2:

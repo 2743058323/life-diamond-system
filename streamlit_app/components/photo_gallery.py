@@ -30,7 +30,7 @@ def show(photo_service, order_id, photos_data, grouped_photos, allowed_actions, 
         # 显示上传按钮
         if 'upload_photo' in allowed_actions:
             st.markdown("---")
-            if st.button("📷 上传第一张照片", width='stretch'):
+            if st.button("📷 上传第一张照片"):
                 st.session_state.show_upload_modal = True
         return
     
@@ -57,7 +57,7 @@ def show(photo_service, order_id, photos_data, grouped_photos, allowed_actions, 
                 
                 # 照片卡片 - 只有URL不为空时才显示
                 if photo_url:
-                    st.image(photo_url, width='stretch')
+                    st.image(photo_url)
                 else:
                     st.warning("照片URL缺失")
                 
@@ -83,7 +83,7 @@ def show(photo_service, order_id, photos_data, grouped_photos, allowed_actions, 
     
     # 上传更多照片按钮
     if 'upload_photo' in allowed_actions:
-        if st.button("📷 上传更多照片", width='stretch'):
+        if st.button("📷 上传更多照片"):
             st.session_state.show_upload_modal = True
 
 
@@ -98,7 +98,7 @@ def delete_photo_with_confirm(photo_service, photo_id, photo_url, on_change):
     
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("✅ 确认删除", key=f"confirm_delete_{photo_id}", width='stretch'):
+        if st.button("✅ 确认删除", key=f"confirm_delete_{photo_id}"):
             with st.spinner("正在删除照片..."):
                 result = photo_service.delete_photo(photo_id)
             
@@ -115,7 +115,7 @@ def delete_photo_with_confirm(photo_service, photo_id, photo_url, on_change):
                 st.error(f"❌ 删除失败：{result.get('message')}")
     
     with col2:
-        if st.button("❌ 取消", key=f"cancel_delete_{photo_id}", width='stretch'):
+        if st.button("❌ 取消", key=f"cancel_delete_{photo_id}"):
             # 清除状态
             if 'deleting_photo_id' in st.session_state:
                 del st.session_state.deleting_photo_id
@@ -166,7 +166,7 @@ def show_upload_modal(photo_service, order_id, progress_data, on_upload):
             cols = st.columns(min(len(uploaded_files), 3))
             for i, file in enumerate(uploaded_files[:3]):
                 with cols[i % 3]:
-                    st.image(file, caption=file.name, width='stretch')
+                    st.image(file, caption=file.name)
             if len(uploaded_files) > 3:
                 st.caption(f"...还有 {len(uploaded_files) - 3} 张照片")
         

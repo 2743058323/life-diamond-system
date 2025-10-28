@@ -229,7 +229,7 @@ class AuthManager:
             """, unsafe_allow_html=True)
             
             # 退出按钮
-            if st.sidebar.button("退出登录", width='stretch', type="secondary"):
+            if st.sidebar.button("退出登录", type="secondary"):
                 self.logout()
                 st.rerun()
     

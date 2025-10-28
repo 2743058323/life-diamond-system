@@ -126,7 +126,7 @@ def show(order_service, search="", status_filter="全部", page_size=10):
         cols = st.columns([1, 2, 1])
         
         with cols[0]:
-            if st.button("◀", disabled=(current_page == 1), width='stretch'):
+            if st.button("◀", disabled=(current_page == 1)):
                 st.session_state.order_list_page = current_page - 1
                 st.rerun()
         
@@ -137,7 +137,7 @@ def show(order_service, search="", status_filter="全部", page_size=10):
             )
         
         with cols[2]:
-            if st.button("▶", disabled=(current_page >= total_pages), width='stretch'):
+            if st.button("▶", disabled=(current_page >= total_pages)):
                 st.session_state.order_list_page = current_page + 1
                 st.rerun()
     

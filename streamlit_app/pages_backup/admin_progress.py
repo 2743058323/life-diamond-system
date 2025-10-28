@@ -48,7 +48,7 @@ def show_single_progress_update():
         )
     
     with col2:
-        if st.button("🔍 查询订单", width='stretch'):
+        if st.button("🔍 查询订单"):
             if search_query:
                 search_orders_for_progress(search_query)
             else:
@@ -295,7 +295,7 @@ def show_progress_update_form():
                 preview_cols = st.columns(min(len(uploaded_photos), 4))
                 for i, photo in enumerate(uploaded_photos[:4]):
                     with preview_cols[i]:
-                        st.image(photo, width='stretch', caption=f"照片 {i+1}")
+                        st.image(photo, caption=f"照片 {i+1}")
                 if len(uploaded_photos) > 4:
                     st.caption(f"还有 {len(uploaded_photos) - 4} 张照片...")
         
@@ -422,7 +422,7 @@ def render_progress_timeline_with_photos(progress_data: list, current_stage: str
                         photo_url = photo.get("photo_url", photo.get("thumbnail_url", ""))
                         if photo_url:
                             try:
-                                st.image(photo_url, width='stretch', caption=f"照片 {j+1}")
+                                st.image(photo_url, caption=f"照片 {j+1}")
                             except:
                                 st.caption(f"照片 {j+1}")
                 if len(stage_photos) > 4:
@@ -514,7 +514,7 @@ def show_all_orders_dashboard():
     st.info("点击订单卡片可以直接进入进度更新页面，无需搜索")
     
     # 加载所有订单
-    if st.button("🔄 刷新订单列表", width='stretch'):
+    if st.button("🔄 刷新订单列表"):
         load_all_orders()
     
     if 'all_orders' in st.session_state:
@@ -640,7 +640,7 @@ def display_order_card(order):
         st.markdown("</div>", unsafe_allow_html=True)
         
         # 更新进度按钮
-        if st.button(f"📝 更新进度", key=f"update_{order_id}", width='stretch'):
+        if st.button(f"📝 更新进度", key=f"update_{order_id}"):
             select_order_for_progress({'_id': order_id})
             st.rerun()  # 强制刷新页面
 
@@ -725,7 +725,7 @@ def show_batch_update_form():
                 help="选择批量更新的状态"
             )
         
-        if st.button("🚀 执行批量更新", type="primary", width='stretch'):
+        if st.button("🚀 执行批量更新", type="primary"):
             execute_batch_update(selected_orders, batch_stage, batch_status)
 
 def execute_batch_update(orders: list, stage_name: str, status: str):

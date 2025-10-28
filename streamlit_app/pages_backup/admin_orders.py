@@ -82,7 +82,7 @@ def show_orders_list():
         )
     
     with col4:
-        refresh_clicked = st.button("🔄 刷新", width='stretch')
+        refresh_clicked = st.button("🔄 刷新")
     
     state = OrderPageState.get()
     changed = (
@@ -188,21 +188,21 @@ def render_orders_cards(orders: list):
             st.markdown("<br>", unsafe_allow_html=True)
             
             # 查看详情按钮
-            if st.button("🔍", key=f"view_{order.get('_id', i)}", width='stretch', help="查看详情", type="primary"):
+            if st.button("🔍", key=f"view_{order.get('_id', i)}", help="查看详情", type="primary"):
                 st.session_state.selected_order_id = order.get('_id')
                 st.session_state.admin_page = "订单详情"
                 st.rerun()
             
             # 编辑按钮
             if auth_manager.has_permission("orders.update"):
-                if st.button("✏️", key=f"edit_{order.get('_id', i)}", width='stretch', help="编辑订单"):
+                if st.button("✏️", key=f"edit_{order.get('_id', i)}", help="编辑订单"):
                     state = OrderPageState.get()
                     state["editing_id"] = order.get('_id')
                     st.rerun()
             
             # 删除按钮
             if auth_manager.has_permission("orders.delete"):
-                if st.button("🗑️", key=f"delete_{order.get('_id', i)}", width='stretch', type="secondary", help="删除订单"):
+                if st.button("🗑️", key=f"delete_{order.get('_id', i)}", type="secondary", help="删除订单"):
                     state = OrderPageState.get()
                     state["delete_confirm_id"] = order.get('_id')
                     st.rerun()
@@ -541,7 +541,7 @@ def show_edit_order_form(order: dict):
                 update_order(order.get('_id'), update_order_data)
     
     # 取消按钮放在表单外面
-    if st.button("❌ 取消编辑", key=f"cancel_edit_{order.get('_id')}", width='stretch', type="secondary"):
+    if st.button("❌ 取消编辑", key=f"cancel_edit_{order.get('_id')}", type="secondary"):
         # 清除编辑状态
         state = OrderPageState.get()
         state["editing_id"] = None
@@ -555,11 +555,11 @@ def show_delete_confirmation(order: dict):
     col1, col2, col3 = st.columns([1, 1, 1])
     
     with col1:
-        if st.button("✅ 确认删除", key=f"confirm_delete_{order.get('_id')}", width='stretch', type="primary"):
+        if st.button("✅ 确认删除", key=f"confirm_delete_{order.get('_id')}", type="primary"):
             delete_order(order.get('_id'))
     
     with col2:
-        if st.button("❌ 取消", key=f"cancel_delete_{order.get('_id')}", width='stretch'):
+        if st.button("❌ 取消", key=f"cancel_delete_{order.get('_id')}"):
             state = OrderPageState.get()
             state["delete_confirm_id"] = None
             st.rerun()

@@ -140,7 +140,6 @@ def show_search_results():
             if st.button(
                 "查看详情",
                 key=f"detail_{order.get('order_id', i)}",
-                width='stretch',
                 type="secondary"
             ):
                 load_order_details(order.get('_id'))
@@ -179,7 +178,7 @@ def show_order_details():
     # 返回按钮
     col1, col2 = st.columns([1, 4])
     with col1:
-        if st.button("← 返回列表", width='stretch'):
+        if st.button("← 返回列表"):
             if 'selected_order' in st.session_state:
                 del st.session_state.selected_order
             st.rerun()
@@ -380,7 +379,7 @@ def render_progress_with_photos(progress_data: List[Dict[str, Any]], photos_data
                                 if img_idx < len(images):
                                     with col:
                                         # 显示图片
-                                        st.image(images[img_idx], width='stretch')
+                                        st.image(images[img_idx])
                                         st.caption(labels[img_idx])
                     else:
                         st.warning("⚠️ 该阶段照片URL无效或为空")

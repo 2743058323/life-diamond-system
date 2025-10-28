@@ -21,7 +21,7 @@ def show_page():
     with col_title:
         st.title("📋 操作日志")
     with col_refresh:
-        if st.button("🔄 刷新数据", type="primary", width='stretch'):
+        if st.button("🔄 刷新数据", type="primary"):
             st.session_state.refresh_logs = True
             st.rerun()
     
@@ -121,7 +121,7 @@ def render_filters(logs_data):
     # 搜索按钮
     col_button, col_info = st.columns([1, 5])
     with col_button:
-        if st.button("🔍 搜索", type="primary", width='stretch'):
+        if st.button("🔍 搜索", type="primary"):
             st.session_state['search_applied'] = True
     
     # 应用筛选
@@ -251,7 +251,6 @@ def render_logs_list():
         
         st.dataframe(
             df,
-            width='stretch',
             hide_index=True,
             height=600,
             column_config={
