@@ -316,6 +316,16 @@ def apply_custom_css():
         display: none;
     }
     
+    /* 隐藏侧边栏的页面选择器 */
+    section[data-testid="stSidebar"] > div > div > div > div > div > div:first-child {
+        display: none;
+    }
+    
+    /* 隐藏页面导航 */
+    [data-testid="stSidebarNav"] {
+        display: none;
+    }
+    
     /* 调整主内容区域，避免被遮挡 */
     .main .block-container {
         padding-top: 1rem;
