@@ -14,8 +14,10 @@ RUN apt-get update && apt-get install -y \
 # 复制依赖文件
 COPY streamlit_app/requirements.txt .
 
-# 安装 Python 依赖
-RUN pip install --no-cache-dir -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
+# 安装 Python 依赖（使用腾讯云镜像，更快）
+RUN pip install --no-cache-dir -r requirements.txt \
+    -i https://mirrors.cloud.tencent.com/pypi/simple/ \
+    --timeout=1000
 
 # 复制应用代码
 COPY streamlit_app/ /app/
