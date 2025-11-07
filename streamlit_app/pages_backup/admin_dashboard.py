@@ -41,7 +41,8 @@ def load_dashboard_data():
                     st.session_state.dashboard_data = data.get("data", {})
                 else:
                     st.session_state.dashboard_data = data
-                st.session_state.dashboard_last_update = datetime.now()
+                # 使用北京时间（UTC+8）
+                st.session_state.dashboard_last_update = datetime.utcnow() + timedelta(hours=8)
             else:
                 show_error_message(
                     result.get("message", "数据加载失败"),
