@@ -83,7 +83,7 @@ def show_roles_management():
     # 初始化按钮
     col1, col2 = st.columns([1, 4])
     with col1:
-        if st.button("🔄 刷新数据", help="重新加载角色数据"):
+        if st.button("🔄 刷新数据", help="重新加载角色数据", key="roles_refresh"):
             load_roles_data()
             st.rerun()
     
@@ -151,7 +151,7 @@ def show_permissions_management():
     load_permissions_data()
     
     # 操作按钮
-    if st.button("🔄 刷新数据", help="重新加载权限数据"):
+    if st.button("🔄 刷新数据", help="重新加载权限数据", key="permissions_refresh"):
         load_permissions_data()
         st.rerun()
     

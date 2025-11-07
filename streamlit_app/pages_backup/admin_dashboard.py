@@ -30,7 +30,7 @@ def show_page():
 def load_dashboard_data():
     """加载仪表板数据"""
     # 在页面加载时或用户点击刷新时加载数据
-    if 'dashboard_data' not in st.session_state or st.button("🔄 刷新数据", type="secondary"):
+    if 'dashboard_data' not in st.session_state or st.button("🔄 刷新数据", type="secondary", key="dashboard_refresh_top"):
         with st.spinner("正在加载仪表板数据..."):
             result = api_client.get_dashboard_data()
             
@@ -95,7 +95,7 @@ def render_dashboard():
             st.rerun()
     
     with col3:
-        if st.button("🔄 刷新数据"):
+        if st.button("🔄 刷新数据", key="dashboard_refresh_quick"):
             if 'dashboard_data' in st.session_state:
                 del st.session_state.dashboard_data
             st.rerun()

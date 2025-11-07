@@ -21,7 +21,7 @@ def show_page():
     with col_title:
         st.title("📋 操作日志")
     with col_refresh:
-        if st.button("🔄 刷新数据", type="primary"):
+        if st.button("🔄 刷新数据", type="primary", key="logs_refresh"):
             st.session_state.refresh_logs = True
             st.rerun()
     
