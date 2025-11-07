@@ -2,7 +2,7 @@
 系统维护页面组件
 """
 import streamlit as st
-from datetime import datetime
+from datetime import datetime, timedelta
 
 def show_maintenance_page(
     title="🔧 系统维护中",
@@ -122,12 +122,15 @@ def show_maintenance_page(
     """, unsafe_allow_html=True)
     
     # 维护页面内容
+    # 构建预计时间部分（如果有的话）
+    time_html = f'<div class="maintenance-time">⏰ {expected_time}</div>' if expected_time else ''
+    
     st.markdown(f"""
         <div class="maintenance-container">
             <div class="maintenance-icon">⚙️</div>
             <div class="maintenance-title">{title}</div>
             <div class="maintenance-message">{message}</div>
-            <div class="maintenance-time">⏰ {expected_time}</div>
+            {time_html}
         </div>
     """, unsafe_allow_html=True)
     
@@ -155,7 +158,9 @@ def show_maintenance_page(
         """, unsafe_allow_html=True)
     
     # 页脚
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # 获取北京时间（UTC+8）
+    beijing_time = datetime.utcnow() + timedelta(hours=8)
+    current_time = beijing_time.strftime("%Y-%m-%d %H:%M:%S")
     st.markdown(f"""
         <div class="maintenance-footer">
             感谢您的耐心等待！<br>
@@ -201,7 +206,7 @@ def check_maintenance_mode():
     maintenance_info = {
         "title": os.getenv("MAINTENANCE_TITLE", "🔧 系统维护中"),
         "message": os.getenv("MAINTENANCE_MESSAGE", "我们正在进行系统升级和维护，以提供更好的服务体验。"),
-        "expected_time": os.getenv("MAINTENANCE_TIME", "预计维护时间：30分钟"),
+        "expected_time": os.getenv("MAINTENANCE_TIME", ""),  # 默认为空，不显示预计时间
         "show_contact": os.getenv("MAINTENANCE_SHOW_CONTACT", "true").lower() == "true"
     }
     
