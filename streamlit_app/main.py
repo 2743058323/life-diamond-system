@@ -9,6 +9,7 @@ from config import APP_CONFIG
 from utils.helpers import apply_custom_css
 from utils.auth import auth_manager
 from streamlit_option_menu import option_menu
+from components.maintenance_page import check_maintenance_mode, show_maintenance_page, should_bypass_maintenance
 
 # 导入页面组件
 from pages_backup import customer_query, admin_dashboard, admin_orders, admin_users, admin_role_permissions, admin_operation_logs
@@ -24,6 +25,12 @@ def main():
         menu_items=APP_CONFIG["menu_items"]
     )
     
+    # 检查维护模式
+    is_maintenance, maintenance_info = check_maintenance_mode()
+    if is_maintenance and not should_bypass_maintenance():
+        # 显示维护页面并停止执行
+        show_maintenance_page(**maintenance_info)
+        return
     
     # 应用自定义样式
     apply_custom_css()
