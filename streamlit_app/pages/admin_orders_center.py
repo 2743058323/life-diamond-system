@@ -37,7 +37,7 @@ def show_page():
         st.markdown("### 或者手动输入订单编号")
         
         with st.form("search_order_form"):
-            input_order_number = st.text_input("订单编号", placeholder="例如：ORD202401001")
+            input_order_number = st.text_input("订单编号", placeholder="例如：LD1234A1B2C3")
             submitted = st.form_submit_button("🔍 查询")
             
             if submitted and input_order_number:

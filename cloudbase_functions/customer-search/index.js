@@ -15,26 +15,32 @@ exports.main = async function(event, context) {
     
     try {
         // 解析请求参数
-        var customerName = '';
+        var searchType = '';  // 查询类型：name, phone, email, order_number
+        var searchValue = '';
         
         if (event.httpMethod === 'POST') {
             try {
                 if (event.body) {
                     var body = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
-                    customerName = body.customer_name || '';
+                    searchType = body.search_type || 'phone';  // 默认按电话查询
+                    searchValue = body.search_value || body.customer_name || '';
                 }
             } catch (e) {
                 console.log('解析POST body失败:', e);
-                customerName = '';
+                searchType = 'phone';
+                searchValue = '';
             }
         } else {
-            customerName = event.customer_name || '';
+            // GET请求支持多种参数
+            searchType = event.search_type || 'phone';
+            searchValue = event.search_value || event.customer_name || event.order_number || event.customer_phone || event.customer_email || '';
         }
         
-        console.log('查询客户姓名:', customerName);
+        console.log('查询类型:', searchType);
+        console.log('查询值:', searchValue);
         
-        if (!customerName) {
-            console.log('客户姓名为空，返回错误');
+        if (!searchValue || !searchValue.trim()) {
+            console.log('查询值为空，返回错误');
             return {
                 statusCode: 200,
                 headers: {
@@ -43,29 +49,56 @@ exports.main = async function(event, context) {
                 },
                 body: JSON.stringify({
                     success: false,
-                    message: '客户姓名不能为空',
+                    message: '查询内容不能为空',
                     data: []
                 })
             };
         }
         
+        // 构建查询条件
+        var queryCondition = {
+            is_deleted: db.command.neq(true)
+        };
+        
+        // 根据查询类型设置查询字段
+        switch(searchType) {
+            case 'order_number':
+                queryCondition.order_number = searchValue.trim();
+                break;
+            case 'phone':
+                queryCondition.customer_phone = searchValue.trim();
+                break;
+            case 'email':
+                queryCondition.customer_email = searchValue.trim();
+                break;
+            case 'name':
+            default:
+                queryCondition.customer_name = searchValue.trim();
+                break;
+        }
+        
         // 查询数据库（排除软删除的订单）
         console.log('开始查询数据库...');
+        console.log('查询条件:', JSON.stringify(queryCondition));
         const result = await db.collection('orders')
-            .where({
-                customer_name: customerName,
-                is_deleted: db.command.neq(true)
-            })
+            .where(queryCondition)
             .get();
         
         console.log('数据库查询成功！');
         console.log('数据库查询结果:', JSON.stringify(result, null, 2));
         
         var responseData = result.data || [];
+        var searchTypeName = {
+            'name': '姓名',
+            'phone': '电话',
+            'email': '邮箱',
+            'order_number': '订单号'
+        }[searchType] || '信息';
+        
         var response = {
             success: true,
             data: responseData,
-            message: '查询成功，找到 ' + responseData.length + ' 个订单'
+            message: '根据' + searchTypeName + '查询成功，找到 ' + responseData.length + ' 个订单'
         };
         
         console.log('准备返回响应:', JSON.stringify(response, null, 2));

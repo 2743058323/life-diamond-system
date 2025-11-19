@@ -24,7 +24,7 @@ class CloudBaseClient:
         self.env_id = CLOUDBASE_CONFIG["env_id"]
         self.region = CLOUDBASE_CONFIG["region"]
     
-    def _compress_image(self, file_content: bytes, filename: str, max_size_kb: int = 80, quality: int = 85) -> bytes:
+    def _compress_image(self, file_content: bytes, filename: str, max_size_kb: int = 300, quality: int = 90) -> bytes:
         """压缩图片到指定大小"""
         try:
             # 打开图片
@@ -42,7 +42,7 @@ class CloudBaseClient:
                 return file_content
             
             # 逐步压缩
-            for q in range(quality, 20, -10):
+            for q in range(quality, 40, -5):
                 buffer = io.BytesIO()
                 image.save(buffer, format='JPEG', quality=q, optimize=True)
                 compressed_size = len(buffer.getvalue())
@@ -59,7 +59,7 @@ class CloudBaseClient:
                 resized_image = image.resize((width, height), Image.Resampling.LANCZOS)
                 
                 buffer = io.BytesIO()
-                resized_image.save(buffer, format='JPEG', quality=70, optimize=True)
+                resized_image.save(buffer, format='JPEG', quality=80, optimize=True)
                 compressed_size = len(buffer.getvalue())
                 
                 print(f"🔄 缩小尺寸: {width}x{height}, 大小: {compressed_size/1024:.1f}KB")
@@ -162,8 +162,21 @@ class CloudBaseClient:
 
     # 客户查询接口
     def search_orders_by_name(self, customer_name: str) -> Dict[str, Any]:
-        """根据客户姓名查询订单"""
-        return self._call_function("customer-search", {"customer_name": customer_name})
+        """根据客户姓名查询订单（兼容旧接口）"""
+        return self.search_orders(search_type="name", search_value=customer_name)
+    
+    def search_orders(self, search_type: str = "name", search_value: str = "") -> Dict[str, Any]:
+        """
+        查询订单（支持多种查询方式）
+        
+        Args:
+            search_type: 查询类型，可选值：name（姓名）、phone（电话）、email（邮箱）、order_number（订单号）
+            search_value: 查询值
+        """
+        return self._call_function("customer-search", {
+            "search_type": search_type,
+            "search_value": search_value
+        })
 
     def get_order_detail(self, order_id: str, is_admin: bool = False) -> Dict[str, Any]:
         """获取订单详情"""
@@ -276,8 +289,14 @@ class CloudBaseClient:
 
     # 照片上传接口 - 直接上传到云存储
     def upload_photos(self, order_id: str, stage_id: str, files: List[Any], description: str = "") -> Dict[str, Any]:
-        """上传照片到云存储"""
+        """上传照片和视频到云存储"""
         try:
+            # 收集文件类型信息
+            file_types = []
+            for file in files:
+                file_type = getattr(file, 'type', None) or 'image/jpeg'
+                file_types.append(file_type)
+            
             # 直接调用云函数获取上传URL
             result = self._call_function("photo-upload", {
                 "action": "get_upload_url",
@@ -285,6 +304,7 @@ class CloudBaseClient:
                     "order_id": order_id,
                     "stage_id": stage_id,
                     "file_count": len(files),
+                    "file_types": file_types,  # 传递文件类型数组
                     "description": description
                 }
             })
@@ -310,161 +330,135 @@ class CloudBaseClient:
                     
                     print(f"📤 开始上传文件 {i+1}/{len(files)}: {file.name}")
                     print(f"📊 原始文件大小: {len(file_content)} bytes ({len(file_content)/1024:.1f}KB)")
-                    
-                    # 压缩图片
-                    compressed_content = self._compress_image(file_content, file.name, max_size_kb=80)
-                    print(f"📉 压缩后大小: {len(compressed_content)} bytes ({len(compressed_content)/1024:.1f}KB)")
-                    
+
+                    # 只支持COS预签名直传，不压缩，直接使用原图
+                    print("🖼️ 使用COS预签名直传，原图上传，不压缩")
                     print(f"🔗 上传URL: {upload_url['upload_url']}")
                     
-                    # 检查上传方式
-                    if upload_url["upload_url"] == "cloud_storage":
-                        print("☁️ 使用云存储上传方案")
-                        # 通过云函数上传到云存储
-                        try:
-                            cloud_upload_result = self._call_function("photo-upload", {
-                                "action": "cloud_upload",
-                                "data": {
-                                    "order_id": order_id,
-                                    "stage_id": stage_id,
-                                    "files": [{
-                                        "name": file.name,
-                                        "size": len(compressed_content),
-                                        "content": base64.b64encode(compressed_content).decode('utf-8') if isinstance(compressed_content, bytes) else compressed_content
-                                    }]
-                                }
-                            })
-                            
-                            if cloud_upload_result.get("success"):
-                                print(f"✅ 云存储上传成功: {file.name}")
-                                upload_success = True
-                                # 更新上传结果
-                                uploaded_files_data = cloud_upload_result.get("data", {}).get("uploaded_files", [])
-                                if uploaded_files_data:
-                                    upload_url.update(uploaded_files_data[0])
-                            else:
-                                print(f"❌ 云存储上传失败: {cloud_upload_result.get('message')}")
-                                upload_success = False
-                        except Exception as e:
-                            print(f"❌ 云存储上传异常: {str(e)}")
-                            upload_success = False
-                    elif upload_url.get("uploadMethod") == "direct_upload":
-                        print("☁️ 使用CloudBase直接上传方案")
-                        # 通过云函数直接上传
-                        try:
-                            # 将文件内容转换为Base64
-                            if isinstance(file_content, bytes):
-                                file_content_b64 = base64.b64encode(file_content).decode('utf-8')
-                            else:
-                                file_content_b64 = file_content
-                            
-                            direct_upload_result = self._call_function("photo-upload", {
-                                "action": "direct_upload",
-                                "data": {
-                                    "cloudPath": upload_url.get("cloud_path", f"photos/{order_id}/{stage_id}/{file.name}"),
-                                    "fileContent": file_content_b64,
-                                    "fileName": file.name
-                                }
-                            })
-                            
-                            if direct_upload_result.get("success"):
-                                print(f"✅ 云函数直接上传成功: {file.name}")
-                                upload_success = True
-                                # 更新上传结果
-                                upload_url.update(direct_upload_result.get("data", {}))
-                            else:
-                                print(f"❌ 云函数直接上传失败: {direct_upload_result.get('message')}")
-                                upload_success = False
-                        except Exception as e:
-                            print(f"❌ 云函数直接上传异常: {str(e)}")
-                            upload_success = False
-                    else:
-                        # 直接上传到云存储
+                    # 验证是否为预签名URL
+                    upload_method = upload_url.get("uploadMethod", "")
+                    storage_type = upload_url.get("storage_type", "")
+                    upload_url_str = str(upload_url.get("upload_url", ""))
+                    
+                    is_presigned = (
+                        upload_method == "presigned_put" 
+                        or storage_type == "cos_presigned_put"
+                        or "q-sign-algorithm=" in upload_url_str
+                    )
+                    
+                    if not is_presigned:
+                        print(f"❌ 错误：返回的上传方式不是预签名直传")
+                        print(f"   uploadMethod: {upload_method}")
+                        print(f"   storage_type: {storage_type}")
+                        print(f"   upload_url: {upload_url_str[:100]}...")
+                        return {"success": False, "message": "上传方式错误：只支持COS预签名直传，请检查云函数配置"}
+                    
+                    # 使用COS预签名直传方案 (PUT)，原图上传
+                    print("☁️ 使用COS预签名直传方案 (PUT)，原图上传，不压缩")
+                    # 直接向 COS 预签名 URL 发起 PUT
+                    try:
                         import requests
+                        from urllib.parse import urlparse
+                        url_info = urlparse(upload_url["upload_url"])
                         
-                        print(f"☁️ 直接上传到云存储: {upload_url['upload_url']}")
+                        # 详细日志：检查URL路径
+                        print(f"🔍 解析预签名URL:")
+                        print(f"   - 完整URL: {upload_url['upload_url'][:150]}...")
+                        print(f"   - URL路径: {url_info.path}")
+                        print(f"   - URL查询参数: {url_info.query[:100]}...")
                         
-                        # 尝试多种上传方式
-                        response = None
-                        upload_success = False
+                        # 检查预签名URL中是否包含host在签名中
+                        # 如果q-header-list包含host，需要发送Host header
+                        put_headers = {}
                         
-                        # 方法1: CloudBase标准上传方式 (multipart/form-data + token)
+                        # 依据文件类型设置 Content-Type
                         try:
-                            files = {
-                                'file': (file.name, file_content, file.type)
-                            }
-                            form_data = {}
-                            
-                            # 如果有token，添加到form_data中
-                            if 'upload_token' in upload_url and upload_url['upload_token']:
-                                form_data['token'] = upload_url['upload_token']
-                                print(f"🔑 使用上传Token: {upload_url['upload_token'][:20]}...")
-                            
-                            response = requests.post(
-                                upload_url["upload_url"],
-                                files=files,
-                                data=form_data,
-                                headers={
-                                    "User-Agent": "life-diamond-system/1.0"
-                                },
-                                timeout=30
-                            )
-                            print(f"📡 CloudBase标准上传响应: {response.status_code}")
-                            if response.status_code in [200, 201, 204]:
-                                upload_success = True
-                        except Exception as e:
-                            print(f"❌ CloudBase标准上传失败: {str(e)}")
+                            content_type = getattr(file, 'type', None) or 'application/octet-stream'
+                        except Exception:
+                            content_type = 'application/octet-stream'
+                        put_headers['Content-Type'] = content_type
                         
-                        # 方法2: PUT请求上传原始数据
-                        if not upload_success:
+                        # Content-Length 必须与实体长度一致
+                        try:
+                            put_headers['Content-Length'] = str(len(file_content))
+                        except Exception:
+                            pass
+                        
+                        # 检查是否需要发送Host header
+                        # 优先使用云函数返回的required_host值（签名时使用的host值）
+                        # 如果没有，则从URL中解析
+                        required_host = upload_url.get("required_host")
+                        
+                        if required_host:
+                            # 使用云函数明确指定的host值，确保完全匹配
+                            put_headers['host'] = required_host
+                            print(f"   - ✅ 使用云函数指定的host header: {required_host}")
+                        elif "q-header-list" in upload_url["upload_url"]:
+                            # 解析q-header-list参数
+                            import re
+                            header_list_match = re.search(r'q-header-list=([^&]+)', upload_url["upload_url"])
+                            if header_list_match:
+                                header_list = header_list_match.group(1)
+                                if 'host' in header_list.lower():
+                                    # 需要发送host header（小写）
+                                    # 使用URL中的域名，移除端口
+                                    host_value = url_info.netloc
+                                    if ':' in host_value and url_info.scheme == 'https':
+                                        host, port = host_value.rsplit(':', 1)
+                                        if port == '443':
+                                            host_value = host
+                                    
+                                    put_headers['host'] = host_value
+                                    print(f"   - ✅ q-header-list包含host，发送host header: {host_value}")
+                                    print(f"   - ⚠️ 注意：如果签名失败，请检查host值是否与签名时完全一致")
+                                else:
+                                    print(f"   - q-header-list不包含host，不发送host header")
+                            else:
+                                print(f"   - 无法解析q-header-list，不发送host header")
+                        else:
+                            print(f"   - URL中无q-header-list参数，不发送host header")
+                        
+                        print(f"   - Content-Type: {put_headers.get('Content-Type')}")
+                        print(f"   - Content-Length: {put_headers.get('Content-Length')}")
+                        
+                        # 使用requests直接PUT，使用原始文件字节，保持原图质量
+                        print(f"📤 发送PUT请求到: {url_info.scheme}://{url_info.netloc}{url_info.path}")
+                        response = requests.put(
+                            upload_url["upload_url"],
+                            # 使用原始文件字节，保持原图质量
+                            data=file_content,
+                            headers=put_headers,
+                            timeout=60
+                        )
+                        print(f"📡 预签名PUT响应: {response.status_code}")
+                        if response.status_code in [200, 201, 204]:
+                            upload_success = True
+                        else:
                             try:
-                                response = requests.put(
-                                    upload_url["upload_url"],
-                                    data=file_content,
-                                    headers={
-                                        "Content-Type": file.type,
-                                        "Content-Length": str(len(file_content)),
-                                        "User-Agent": "life-diamond-system/1.0"
-                                    },
-                                    timeout=30
-                                )
-                                print(f"📡 PUT上传响应: {response.status_code}")
-                                if response.status_code in [200, 201, 204]:
-                                    upload_success = True
-                            except Exception as e:
-                                print(f"❌ PUT上传失败: {str(e)}")
-                        
-                        # 方法3: POST请求上传原始数据
-                        if not upload_success:
-                            try:
-                                response = requests.post(
-                                    upload_url["upload_url"],
-                                    data=file_content,
-                                    headers={
-                                        "Content-Type": file.type,
-                                        "Content-Length": str(len(file_content)),
-                                        "User-Agent": "life-diamond-system/1.0"
-                                    },
-                                    timeout=30
-                                )
-                                print(f"📡 POST上传响应: {response.status_code}")
-                                if response.status_code in [200, 201, 204]:
-                                    upload_success = True
-                            except Exception as e:
-                                print(f"❌ POST上传失败: {str(e)}")
-                        
-                        if not upload_success and response:
-                            print(f"❌ 所有上传方法都失败，最后响应: {response.status_code}")
-                            print(f"❌ 响应内容: {response.text}")
+                                error_text = response.text[:300] if response.text else "无响应内容"
+                                print(f"🧪 预签名PUT响应体: {error_text}")
+                            except Exception:
+                                pass
+                            upload_success = False
+                            error_msg = f"上传失败 (HTTP {response.status_code})"
+                    except Exception as e:
+                        print(f"❌ 预签名PUT上传失败: {str(e)}")
+                        upload_success = False
+                        error_msg = f"上传异常: {str(e)}"
                     
                     if upload_success:
                         uploaded_files.append({
-                            "file_id": upload_url["file_id"],
+                            "file_id": upload_url.get("file_id", ""),
                             "file_name": file.name,
                             "file_size": file.size,
                             "file_type": file.type,
-                            "photo_url": upload_url["photo_url"],
-                            "thumbnail_url": upload_url["thumbnail_url"]
+                            "photo_url": upload_url.get("photo_url", ""),
+                            "thumbnail_url": upload_url.get("thumbnail_url", upload_url.get("photo_url", "")),
+                            "storage_type": upload_url.get("storage_type", "cos_presigned_put"),
+                            "cloud_path": upload_url.get("cloud_path", ""),
+                            "fileID": upload_url.get("fileID", ""),  # CloudBase存储的fileID
+                            "media_type": upload_url.get("media_type", "photo"),  # 'photo' 或 'video'
+                            "file_extension": upload_url.get("file_extension", "")  # 文件扩展名
                         })
                         print(f"✅ 文件 {file.name} 上传成功")
                     else:
@@ -494,6 +488,28 @@ class CloudBaseClient:
         except Exception as e:
             print(f"❌ 照片上传异常: {str(e)}")
             return {"success": False, "message": f"照片上传失败: {str(e)}"}
+    
+    def delete_photo(self, photo_id: str, reason: str = "", delete_from_storage: bool = True) -> Dict[str, Any]:
+        """删除照片或视频"""
+        if not photo_id:
+            return {"success": False, "message": "缺少照片ID"}
+        
+        operator = "admin"
+        try:
+            user_info = st.session_state.get("user_info") or {}
+            operator = user_info.get("username") or user_info.get("real_name") or operator
+        except Exception:
+            pass
+        
+        return self._call_function("photo-upload", {
+            "action": "delete",
+            "data": {
+                "photo_id": photo_id,
+                "operator": operator,
+                "reason": reason,
+                "delete_from_storage": delete_from_storage
+            }
+        }, is_admin=True)
 
     # 创建订单（兼容接口）
     def create_order(self, order_data: Dict[str, Any]) -> Dict[str, Any]:

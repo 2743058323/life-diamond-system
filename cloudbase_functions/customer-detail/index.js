@@ -1,5 +1,68 @@
 // 客户订单详情查询 - 优化版本（过滤未开始阶段）
 const cloudbase = require('@cloudbase/node-sdk');
+const COS = require('cos-nodejs-sdk-v5');
+
+const {
+    TENCENT_SECRET_ID,
+    TENCENT_SECRET_KEY,
+    STORAGE_REGION = 'ap-shanghai',
+    STORAGE_BUCKET = 'life-diamond-photos-1379657467',
+    COS_GET_SIGNED_URL_EXPIRES = '3600'
+} = process.env;
+
+let cos = null;
+if (TENCENT_SECRET_ID && TENCENT_SECRET_KEY) {
+    cos = new COS({
+        SecretId: TENCENT_SECRET_ID,
+        SecretKey: TENCENT_SECRET_KEY
+    });
+}
+
+const SIGNED_GET_URL_EXPIRES = parseInt(COS_GET_SIGNED_URL_EXPIRES || '3600', 10);
+const COS_DEFAULT_DOMAIN = `${STORAGE_BUCKET}.cos.${STORAGE_REGION}.myqcloud.com`;
+
+function buildCosUrl(key) {
+    if (!key) {
+        return '';
+    }
+    return `https://${COS_DEFAULT_DOMAIN}/${key}`;
+}
+
+function extractKeyFromUrl(url) {
+    if (!url) {
+        return '';
+    }
+    try {
+        const parsed = new URL(url);
+        return parsed.pathname.replace(/^\/+/, '');
+    } catch (err) {
+        if (url.startsWith('photos/')) {
+            return url;
+        }
+        return '';
+    }
+}
+
+function generateSignedGetUrl(key, fallbackUrl = '') {
+    const baseUrl = key ? buildCosUrl(key) : (fallbackUrl || '');
+    if (!key || !cos) {
+        return baseUrl;
+    }
+    try {
+        if (typeof cos.getAuth === 'function') {
+            const auth = cos.getAuth({
+                Method: 'GET',
+                Key: key,
+                Expires: SIGNED_GET_URL_EXPIRES,
+                SignHost: false
+            });
+            return `${baseUrl}?${auth}`;
+        }
+    } catch (error) {
+        console.error('❌ 生成GET预签名URL失败:', error);
+    }
+    return baseUrl;
+}
 
 // 初始化 CloudBase
 const app = cloudbase.init({
@@ -115,19 +178,27 @@ exports.main = async function(event, context) {
       
       // 按阶段分组照片
       const photosByStage = {};
-      photosResult.data.forEach(photo => {
-        // 使用 stage_id 映射到正确的中文名称，优先于 stage_name
+      for (const photo of photosResult.data) {
         const stageName = stageNameMap[photo.stage_id] || photo.stage_name || '未知阶段';
         if (!photosByStage[stageName]) {
           photosByStage[stageName] = [];
         }
+
+        const cloudPath = photo.cloud_path || extractKeyFromUrl(photo.photo_url) || extractKeyFromUrl(photo.thumbnail_url);
+        const baseUrl = cloudPath ? buildCosUrl(cloudPath) : (photo.photo_url || '');
+        const signedUrl = generateSignedGetUrl(cloudPath, baseUrl);
+
         photosByStage[stageName].push({
-          photo_url: photo.photo_url,
-          thumbnail_url: photo.thumbnail_url,
+          photo_url: signedUrl,
+          thumbnail_url: signedUrl,
           description: photo.description,
-          upload_time: photo.upload_time
+          upload_time: photo.upload_time,
+          media_type: photo.media_type || (photo.file_type && photo.file_type.startsWith('video/') ? 'video' : 'photo'), // 添加媒体类型
+          file_type: photo.file_type || 'image/jpeg', // 添加文件类型
+          file_name: photo.file_name || '', // 添加文件名
+          _id: photo._id || '' // 添加ID用于调试
         });
-      });
+      }
       
       // 根据调用来源决定显示哪些进度记录
       let filteredProgress;

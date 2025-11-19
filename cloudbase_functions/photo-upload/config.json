@@ -1,0 +1,22 @@
+{
+  "name": "photo-upload",
+  "timeout": 60,
+  "memory": 512,
+  "runtime": "Nodejs16.13",
+  "triggers": [
+    {
+      "type": "http",
+      "path": "/api/photo/upload"
+    }
+  ],
+  "environment": {
+    "NODE_ENV": "production",
+    "TENCENT_SECRET_ID": "${TENCENT_SECRET_ID}",
+    "TENCENT_SECRET_KEY": "${TENCENT_SECRET_KEY}",
+    "STORAGE_REGION": "ap-shanghai",
+    "STORAGE_BUCKET": "life-diamond-photos-1379657467",
+    "STORAGE_DOMAIN": "",
+    "COS_GET_SIGNED_URL_EXPIRES": "3600"
+  }
+}
+

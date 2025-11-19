@@ -95,16 +95,16 @@ class ProgressService:
         1. 该阶段必须是in_progress状态
         
         可选：
-        - 上传照片
+        - 上传照片和视频
         
         Args:
             order_id: 订单ID
             stage_id: 阶段ID
             notes: 备注
-            photos: 照片文件列表
+            photos: 照片/视频文件列表
             
         Returns:
-            更新结果 + 照片上传结果
+            更新结果 + 照片/视频上传结果
         """
         # 先获取当前进度列表进行校验
         progress_result = self.get_progress(order_id)
@@ -147,7 +147,7 @@ class ProgressService:
                 stage_id=stage_id,
                 stage_name=stage_name,
                 photos=photos,
-                description=f"{stage_name}完成照片"
+                description=f"{stage_name}完成媒体"
             )
         
         # 合并结果

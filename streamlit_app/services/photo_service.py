@@ -22,14 +22,14 @@ class PhotoService:
     def upload_photos(self, order_id: str, stage_id: str, stage_name: str,
                      photos: List, description: str = "") -> Dict[str, Any]:
         """
-        上传照片
+        上传照片和视频
         
         Args:
             order_id: 订单ID
             stage_id: 阶段ID
             stage_name: 阶段名称
-            photos: 照片文件列表
-            description: 照片描述
+            photos: 照片/视频文件列表
+            description: 描述
             
         Returns:
             上传结果
@@ -37,7 +37,7 @@ class PhotoService:
         if not photos or len(photos) == 0:
             return {
                 'success': False,
-                'message': '没有选择照片'
+                'message': '没有选择文件'
             }
         
         # CloudBase 客户端期望的参数为 files（不支持 stage_name 关键字）
@@ -98,11 +98,13 @@ class PhotoService:
         Returns:
             删除结果
         """
-        # TODO: 实现照片删除API
-        return {
-            'success': False,
-            'message': '照片删除功能待实现'
-        }
+        if not photo_id:
+            return {
+                'success': False,
+                'message': '缺少照片ID'
+            }
+        
+        return self.api_client.delete_photo(photo_id)
     
     def group_photos_by_stage(self, photos_data: List[Dict]) -> Dict[str, List[Dict]]:
         """
@@ -142,30 +144,41 @@ class PhotoService:
     
     def validate_photo_files(self, photos: List) -> tuple[bool, str]:
         """
-        验证照片文件
+        验证照片和视频文件
         
         Args:
-            photos: 照片文件列表
+            photos: 照片/视频文件列表
             
         Returns:
             (is_valid, error_message)
         """
         if not photos or len(photos) == 0:
-            return False, "请选择至少一张照片"
+            return False, "请选择至少一个文件"
         
-        # 检查文件大小（最大5MB）
-        MAX_SIZE = 5 * 1024 * 1024  # 5MB
+        # 允许的文件类型
+        ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png']
+        ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo', 'video/webm']
+        ALLOWED_TYPES = ALLOWED_IMAGE_TYPES + ALLOWED_VIDEO_TYPES
         
-        for i, photo in enumerate(photos):
-            if hasattr(photo, 'size') and photo.size > MAX_SIZE:
-                return False, f"照片 {i+1} 超过5MB大小限制"
+        # 文件大小限制
+        MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 照片最大10MB
+        MAX_VIDEO_SIZE = 100 * 1024 * 1024  # 视频最大100MB
         
-        # 检查文件类型
-        ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png']
-        
-        for i, photo in enumerate(photos):
-            if hasattr(photo, 'type') and photo.type not in ALLOWED_TYPES:
-                return False, f"照片 {i+1} 格式不支持（仅支持JPG、PNG）"
+        for i, file in enumerate(photos):
+            file_type = getattr(file, 'type', '')
+            file_size = getattr(file, 'size', 0)
+            
+            # 检查文件类型
+            if file_type and file_type not in ALLOWED_TYPES:
+                return False, f"文件 {i+1} 格式不支持（仅支持JPG、PNG、MP4、MOV、AVI、WEBM）"
+            
+            # 检查文件大小
+            if file_type and file_type.startswith('video/'):
+                if file_size > MAX_VIDEO_SIZE:
+                    return False, f"视频 {i+1} 超过100MB大小限制（当前：{file_size/1024/1024:.1f}MB）"
+            else:
+                if file_size > MAX_IMAGE_SIZE:
+                    return False, f"照片 {i+1} 超过10MB大小限制（当前：{file_size/1024/1024:.1f}MB）"
         
         return True, ""
 

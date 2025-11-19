@@ -49,9 +49,8 @@ Thumbs.db
 *.xlsx
 *.zip
 
-# 测试文件
-test_*.py
-tests/
+# 测试文件（已移动到 tests/ 目录，但保留在版本控制中）
+# test_*.py  # 已移动到 tests/ 目录
 
 # 归档文件
 archive/
@@ -60,21 +59,28 @@ archive/
 cloudbase_functions/*/node_modules/
 cloudbase_functions/*/package-lock.json
 
-# 临时构建文件
-build_*.py
-create_*.py
-fix_*.py
-cloud_hosting_package.py
-permission_system_guide.py
+# 脚本文件（已移动到 scripts/ 目录）
+# build_*.py
+# create_*.py
+# fix_*.py
+# cloud_hosting_package.py
+# permission_system_guide.py
 
-# 文档（可选，如果不想上传文档）
-docs/
-upload_deploy_guide.md
-websocket_fix_guide.md
-*.md
+# 临时文件
+temp/
+*.jpg
+*.jpeg
+*.png
 
-# 其他
-photo_*.jpg
+# 敏感配置文件
+SecretKey.csv
+tencent_config.py
+*.csv
+
+# 文档（保留在版本控制中，但排除某些临时文档）
+# docs/  # 保留文档目录
+
+# 其他配置文件
 nginx.conf
 docker-compose*.yml
 Dockerfile.dev

@@ -220,9 +220,10 @@ class OrderStateMachine:
                 actions.append('start_stage')  # 开始下一个阶段
             actions.append('cancel_order')  # 取消订单
         
-        # 照片上传权限：只要有已开始或已完成的阶段就可以上传
+        # 照片/视频管理权限：有进度即可上传/删除
         if progress_list and any(p.get('status') in [StageStatus.IN_PROGRESS.value, StageStatus.COMPLETED.value] for p in progress_list):
-            actions.append('upload_photo')  # 上传照片
+            actions.append('upload_photo')  # 上传照片/视频
+            actions.append('delete_photo')  # 删除照片/视频
         
         if order_status == OrderStatus.COMPLETED.value:
             actions.append('view_details')  # 查看详情

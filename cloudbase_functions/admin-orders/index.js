@@ -1,5 +1,6 @@
 // 管理员订单管理云函数 - 简化版本
 const cloudbase = require('@cloudbase/node-sdk');
+const crypto = require('crypto');
 
 // 初始化 CloudBase
 const app = cloudbase.init({
@@ -43,14 +44,39 @@ async function logOperation(params) {
     }
 }
 
-// 生成订单编号
-function generateOrderNumber() {
+// 生成订单编号：LD + 手机后4位 + 6位随机十六进制（不含连接符）
+async function generateOrderNumber(customerPhone = '') {
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
-    const timestamp = Date.now().toString().slice(-6);
-    return 'LD' + year + month + day + timestamp;
+    const datePart = `${year}${month}${day}`; // 仅用于潜在扩展，不参与编号
+
+    // 取手机号后4位（仅数字），不足则使用随机数字补齐
+    const digits = String(customerPhone || '').replace(/[^0-9]/g, '');
+    let last4 = digits.slice(-4);
+    if (last4.length < 4) {
+        last4 = (last4 + Math.floor(Math.random() * 10000).toString().padStart(4, '0')).slice(-4);
+    }
+    
+    // 尝试多次生成，确保唯一
+    for (let attempt = 0; attempt < 5; attempt++) {
+        const randomPart = crypto.randomBytes(3).toString('hex').toUpperCase(); // 6位随机
+        const orderNumber = `LD${last4}${randomPart}`; // 示例：LD1234A1B2C3
+
+        const existing = await db.collection('orders')
+            .where({ order_number: orderNumber })
+            .limit(1)
+            .get();
+
+        if (!existing.data || existing.data.length === 0) {
+            return orderNumber;
+        }
+
+        console.warn(`⚠️ 订单号冲突，重新生成（尝试 ${attempt + 1}）`);
+    }
+
+    throw new Error('生成唯一订单号失败，请稍后重试');
 }
 
 exports.main = async function(event, context) {
@@ -138,8 +164,10 @@ exports.main = async function(event, context) {
             // 创建订单
             console.log('创建订单...');
             
+            const orderNumber = await generateOrderNumber(requestData.customer_phone);
+
             var newOrder = {
-                order_number: generateOrderNumber(),
+                order_number: orderNumber,
                 customer_name: requestData.customer_name || '',
                 customer_phone: requestData.customer_phone || '',
                 customer_email: requestData.customer_email || '',
