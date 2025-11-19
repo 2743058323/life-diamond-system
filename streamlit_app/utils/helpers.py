@@ -164,9 +164,9 @@ def render_progress_timeline(progress_data: List[Dict[str, Any]], current_stage:
                 st.divider()
 
 def render_photo_gallery(photos_data: List[Dict[str, Any]], title: str = "制作过程照片"):
-    """渲染照片廊"""
+    """渲染照片和视频画廊"""
     if not photos_data:
-        st.info("暂无制作过程照片")
+        st.info("暂无制作过程照片和视频")
         return
     
     st.markdown(f"#### {title}")
@@ -176,6 +176,18 @@ def render_photo_gallery(photos_data: List[Dict[str, Any]], title: str = "制作
         photos = stage_photos.get("photos", [])
         
         if photos:
+            # 统计照片和视频数量
+            photo_count = sum(1 for p in photos if p.get('media_type', 'photo') != 'video')
+            video_count = sum(1 for p in photos if p.get('media_type') == 'video')
+            
+            # 构建标题
+            if photo_count > 0 and video_count > 0:
+                media_text = f"{photo_count} 张照片，{video_count} 个视频"
+            elif video_count > 0:
+                media_text = f"{video_count} 个视频"
+            else:
+                media_text = f"{photo_count} 张照片"
+            
             # 更突出的阶段标题
             st.markdown(f"""
             <div style="
@@ -189,55 +201,87 @@ def render_photo_gallery(photos_data: List[Dict[str, Any]], title: str = "制作
                 text-align: center;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             ">
-                📸 {stage_name} ({len(photos)} 张照片)
+                📸🎬 {stage_name} ({media_text})
             </div>
             """, unsafe_allow_html=True)
             
-            # 使用列布局显示照片（每行最多6张，非常紧凑）
-            cols = st.columns(min(len(photos), 6))
+            # 分类显示照片和视频
+            photos_list = [p for p in photos if p.get('media_type', 'photo') != 'video']
+            videos_list = [p for p in photos if p.get('media_type') == 'video']
             
-            for i, photo in enumerate(photos):
-                with cols[i % 6]:
-                    try:
-                        st.image(
-                            photo.get("thumbnail_url", photo.get("photo_url", "")),
-                            caption=photo.get("description", f"上传时间：{format_datetime(photo.get('upload_time', ''), 'datetime')}"),
-                            width=80  # 固定图片宽度
-                        )
-                        
-                        # 照片操作按钮
-                        col_btn1, col_btn2 = st.columns(2)
-                        
-                        with col_btn1:
-                            if st.button(f"🔍 查看大图", key=f"view_{i}_{stage_name}"):
-                                st.image(photo.get("photo_url", ""), caption=photo.get("description", ""))
-                        
-                        with col_btn2:
-                            # 下载按钮
-                            photo_url = photo.get("photo_url", "")
-                            if photo_url:
-                                if photo_url.startswith("data:image"):
-                                    # Base64格式的图片
-                                    st.download_button(
-                                        "📥 下载",
-                                        data=photo_url.split(",")[1],
-                                        file_name=photo.get("file_name", f"photo_{i}.jpg"),
-                                        mime="image/jpeg",
-                                        key=f"download_{i}_{stage_name}",
-                                        width='stretch'
-                                    )
-                                else:
-                                    # 云存储URL
-                                    st.download_button(
-                                        "📥 下载",
-                                        data=photo_url,
-                                        file_name=photo.get("file_name", f"photo_{i}.jpg"),
-                                        mime="image/jpeg",
-                                        key=f"download_{i}_{stage_name}",
-                                        width='stretch'
-                                    )
-                    except:
-                        st.error("照片加载失败")
+            # 显示照片
+            if photos_list:
+                st.markdown("**📷 照片：**")
+                # 使用列布局显示照片（每行最多6张，非常紧凑）
+                cols = st.columns(min(len(photos_list), 6))
+                
+                for i, photo in enumerate(photos_list):
+                    with cols[i % 6]:
+                        try:
+                            st.image(
+                                photo.get("thumbnail_url", photo.get("photo_url", "")),
+                                caption=photo.get("description", f"上传时间：{format_datetime(photo.get('upload_time', ''), 'datetime')}"),
+                                width=80  # 固定图片宽度
+                            )
+                            
+                            # 照片操作按钮
+                            col_btn1, col_btn2 = st.columns(2)
+                            
+                            with col_btn1:
+                                if st.button(f"🔍 查看大图", key=f"view_{i}_{stage_name}"):
+                                    st.image(photo.get("photo_url", ""), caption=photo.get("description", ""))
+                            
+                            with col_btn2:
+                                # 下载按钮
+                                photo_url = photo.get("photo_url", "")
+                                if photo_url:
+                                    if photo_url.startswith("data:image"):
+                                        # Base64格式的图片
+                                        st.download_button(
+                                            "📥 下载",
+                                            data=photo_url.split(",")[1],
+                                            file_name=photo.get("file_name", f"photo_{i}.jpg"),
+                                            mime="image/jpeg",
+                                            key=f"download_{i}_{stage_name}",
+                                            width='stretch'
+                                        )
+                                    else:
+                                        # 云存储URL
+                                        st.download_button(
+                                            "📥 下载",
+                                            data=photo_url,
+                                            file_name=photo.get("file_name", f"photo_{i}.jpg"),
+                                            mime="image/jpeg",
+                                            key=f"download_{i}_{stage_name}",
+                                            width='stretch'
+                                        )
+                        except:
+                            st.error("照片加载失败")
+            
+            # 显示视频（懒加载，避免自动下载）
+            if videos_list:
+                if photos_list:
+                    st.markdown("---")
+                st.markdown("**🎬 视频：**")
+                for i, video in enumerate(videos_list):
+                    video_url = video.get("photo_url", video.get("thumbnail_url", ""))
+                    thumbnail_url = video.get("thumbnail_url", "")
+                    video_desc = video.get("description", "")
+                    if not video_desc:
+                        video_desc = f"上传时间：{format_datetime(video.get('upload_time', ''), 'datetime')}"
+                    
+                    if video_url:
+                        # 使用HTML video标签，设置preload="none"确保不预加载
+                        # 只有用户点击播放按钮后才会开始下载视频
+                        st.markdown(f"""
+                        <video width="100%" controls preload="none" style="border-radius: 8px;">
+                            <source src="{video_url}" type="video/mp4">
+                            您的浏览器不支持视频播放。
+                        </video>
+                        """, unsafe_allow_html=True)
+                        st.caption(f"🎬 {video_desc}")
+                    else:
+                        st.warning(f"视频 {i + 1} URL无效")
             
             st.markdown("---")
 

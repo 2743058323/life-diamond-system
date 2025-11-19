@@ -1,4 +1,5 @@
 import streamlit as st
+import re
 import streamlit.components.v1 as components
 from utils.cloudbase_client import api_client
 from utils.helpers import (
@@ -27,7 +28,7 @@ def show_page():
         text-align: center;
     ">
         <h3 style="margin: 0; margin-bottom: 0.5rem;">欢迎使用生命钻石服务系统</h3>
-        <p style="margin: 0; opacity: 0.9;">请输入您的姓名查询订单信息和制作进度</p>
+        <p style="margin: 0; opacity: 0.9;">请输入订单号或联系电话查询订单信息和制作进度</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -39,10 +40,11 @@ def show_page():
             st.markdown("### 订单查询")
             
             with st.form("search_form", clear_on_submit=False):
-                customer_name = st.text_input(
-                    "客户姓名",
-                    placeholder="请输入您的姓名",
-                    help="请输入订单时的姓名（必须完全匹配）"
+                search_value = st.text_input(
+                    "订单号或联系电话",
+                    placeholder="请输入",
+                    help="可直接输入订单号（如：LD1234A1B2C3）或联系电话，系统会自动识别",
+                    key="search_value_input"
                 )
                 
                 search_button = st.form_submit_button(
@@ -51,10 +53,12 @@ def show_page():
                 )
                 
                 if search_button:
-                    if customer_name.strip():
-                        search_orders(customer_name.strip())
+                    if search_value.strip():
+                        # 自动识别是订单号还是电话号码
+                        search_type = detect_search_type(search_value.strip())
+                        search_orders(search_type, search_value.strip())
                     else:
-                        st.warning("请输入客户姓名")
+                        st.warning("请输入订单号或联系电话")
     
     # 根据状态显示不同内容：要么显示列表，要么显示详情
     if 'selected_order' in st.session_state and st.session_state.selected_order:
@@ -65,25 +69,58 @@ def show_page():
         show_search_results()
     
     # 帮助信息
-    with st.expander("使用说明"):
+    with st.expander("💡 使用说明"):
         st.markdown("""
         **如何查询订单？**
         
-        1. 在上方输入框中输入您的姓名（必须与订单时的姓名完全一致）
-        2. 点击“查询订单”按钮
-        3. 系统将显示您的所有订单
+        1. 在输入框中输入订单号或联系电话
+        2. 点击"查询订单"按钮
+        3. 系统将显示匹配的所有订单
         4. 点击具体订单可查看详细信息和制作进度
         
+        **支持的查询方式：**
+        - **订单号**：输入完整的订单号
+        - **联系电话**：输入订单时填写的手机号码
+        
         **注意事项：**
-        - 姓名必须与订单时填写的完全一致
-        - 如果找不到订单，请检查姓名是否正确或联系客服
+        - 查询信息必须与订单时填写的完全一致
+        - 如果找不到订单，请检查输入是否正确或联系客服
         - 系统将实时更新订单进度信息
+        
+        **提示：** 系统会自动识别您输入的是订单号还是联系电话，无需手动选择查询方式。
         """)
 
-def search_orders(customer_name: str):
+def detect_search_type(value: str) -> str:
+    """
+    自动识别查询类型
+    如果看起来像订单号（以LD/ORD开头或包含ORDER等信息），返回order_number
+    否则返回phone（电话号码）
+    """
+    # 局部导入，避免热重载时可能出现的模块未导入问题
+    import re
+    value_upper = value.strip().upper()
+    order_pattern = re.compile(r'^(LD|ORD)[A-Z0-9-]+$')
+    
+    if order_pattern.match(value_upper) or 'ORDER' in value_upper:
+        return "order_number"
+    
+    digits_only = re.sub(r'[^0-9]', '', value)
+    if len(digits_only) >= 6:
+        return "phone"
+    
+    # 默认按订单号处理（适配可能包含字母的自定义订单号）
+    return "order_number"
+
+def search_orders(search_type: str, search_value: str):
     """查询订单"""
-    with st.spinner("正在查询订单..."):
-        result = api_client.search_orders_by_name(customer_name)
+    search_type_names = {
+        "order_number": "订单号",
+        "phone": "联系电话"
+    }
+    search_type_name = search_type_names.get(search_type, "信息")
+    
+    with st.spinner(f"正在根据{search_type_name}查询订单..."):
+        result = api_client.search_orders(search_type=search_type, search_value=search_value)
         
         if result.get("success"):
             data = result.get("data", {})
@@ -98,10 +135,11 @@ def search_orders(customer_name: str):
             
             if orders:
                 st.session_state.search_results = orders
-                st.session_state.search_customer_name = customer_name
+                st.session_state.search_type = search_type
+                st.session_state.search_value = search_value
                 st.success(f"找到 {len(orders)} 个订单")
             else:
-                st.info(f"未找到客户'{customer_name}'的订单，请检查姓名是否正确")
+                st.info(f"未找到匹配的订单，请检查{search_type_name}是否正确")
                 if 'search_results' in st.session_state:
                     del st.session_state.search_results
         else:
@@ -116,7 +154,18 @@ def search_orders(customer_name: str):
 def show_search_results():
     """显示查询结果"""
     st.markdown("---")
-    st.markdown(f"### 📝 {st.session_state.search_customer_name} 的订单列表")
+    
+    # 根据查询类型显示不同的标题
+    search_type = st.session_state.get("search_type", "name")
+    search_value = st.session_state.get("search_value", "")
+    
+    search_type_names = {
+        "order_number": "订单号",
+        "phone": "联系电话"
+    }
+    search_type_name = search_type_names.get(search_type, "信息")
+    
+    st.markdown(f"### 📝 查询结果：{search_type_name} '{search_value}' 的订单列表")
     
     orders = st.session_state.search_results
     
@@ -341,48 +390,91 @@ def render_progress_with_photos(progress_data: List[Dict[str, Any]], photos_data
                 with st.expander("📝 工作人员备注"):
                     st.write(notes)
             
-            # 该阶段的照片
+            # 该阶段的照片和视频
             if stage_photos:
-                with st.expander(f"📸 查看本阶段照片 ({len(stage_photos)} 张)", expanded=False):
-                    st.caption("💡 长按图片可保存")
+                # 统计照片和视频数量
+                photo_count = sum(1 for p in stage_photos if p.get('media_type', 'photo') != 'video')
+                video_count = sum(1 for p in stage_photos if p.get('media_type') == 'video')
+                
+                # 构建标题
+                if photo_count > 0 and video_count > 0:
+                    expander_title = f"📸🎬 查看本阶段媒体 ({photo_count} 张照片，{video_count} 个视频)"
+                elif video_count > 0:
+                    expander_title = f"🎬 查看本阶段视频 ({video_count} 个)"
+                else:
+                    expander_title = f"📸 查看本阶段照片 ({photo_count} 张)"
+                
+                with st.expander(expander_title, expanded=False):
+                    st.caption("💡 长按图片可保存，视频可直接播放")
                     
-                    # 准备图片列表和标签
-                    images = []
-                    labels = []
-                    photo_data_map = {}  # 用于存储照片的完整信息
+                    # 分类显示照片和视频
+                    photos_list = [p for p in stage_photos if p.get('media_type', 'photo') != 'video']
+                    videos_list = [p for p in stage_photos if p.get('media_type') == 'video']
                     
-                    for photo_idx, photo in enumerate(stage_photos):
-                        photo_url = photo.get("thumbnail_url", photo.get("photo_url", ""))
-                        photo_desc = photo.get("description", "")
-                        if not photo_desc:
-                            photo_desc = format_datetime(photo.get('upload_time', ''), 'datetime')
-                        
-                        if photo_url:  # 只添加有效的URL
-                            images.append(photo_url)
-                            labels.append(photo_desc)
-                            
-                            # 存储完整照片信息
-                            photo_data_map[photo_url] = {
-                                'url': photo.get("photo_url", ""),
-                                'caption': photo_desc,
-                                'filename': photo.get("file_name", f"photo_{photo_idx+1}.jpg")
-                            }
-                    
-                    # 使用HTML可点击图片（无需按钮，直接点击图片在新标签打开）
-                    if images:
+                    # 显示照片
+                    if photos_list:
+                        st.markdown("**📷 照片：**")
                         # 每行显示3张图片
                         cols_per_row = 3
-                        for row_idx in range(0, len(images), cols_per_row):
+                        for row_idx in range(0, len(photos_list), cols_per_row):
                             cols = st.columns(cols_per_row)
                             for col_idx, col in enumerate(cols):
                                 img_idx = row_idx + col_idx
-                                if img_idx < len(images):
+                                if img_idx < len(photos_list):
+                                    photo = photos_list[img_idx]
+                                    photo_url = photo.get("thumbnail_url", photo.get("photo_url", ""))
+                                    photo_desc = photo.get("description", "")
+                                    if not photo_desc:
+                                        photo_desc = format_datetime(photo.get('upload_time', ''), 'datetime')
+                                    
                                     with col:
-                                        # 显示图片
-                                        st.image(images[img_idx])
-                                        st.caption(labels[img_idx])
-                    else:
-                        st.warning("⚠️ 该阶段照片URL无效或为空")
+                                        if photo_url:
+                                            st.image(photo_url)
+                                            st.caption(photo_desc)
+                                        else:
+                                            st.warning("照片URL无效")
+                    
+                    # 显示视频
+                    if videos_list:
+                        if photos_list:
+                            st.markdown("---")
+                        st.markdown("**🎬 视频：**")
+                        for video_idx, video in enumerate(videos_list):
+                            video_url = video.get("photo_url", video.get("thumbnail_url", ""))
+                            video_desc = video.get("description", "")
+                            if not video_desc:
+                                video_desc = format_datetime(video.get('upload_time', ''), 'datetime')
+                            
+                            if video_url:
+                                # 使用HTML video标签，设置preload="none"确保不预加载
+                                # 只有用户点击播放按钮后才会开始下载视频
+                                st.markdown(f"""
+                                <video width="100%" controls preload="none" style="border-radius: 8px;">
+                                    <source src="{video_url}" type="video/mp4">
+                                    您的浏览器不支持视频播放。
+                                </video>
+                                """, unsafe_allow_html=True)
+                                st.caption(f"🎬 {video_desc}")
+                                
+                                # 提供下载入口（使用download属性直接保存到本地）
+                                download_name = video.get("file_name") or f"{stage_name}_video_{video_idx + 1}.mp4"
+                                st.markdown(
+                                    f"""
+                                    <a href="{video_url}" download="{download_name}" target="_blank"
+                                       style="display:inline-flex;align-items:center;gap:6px;
+                                              padding:6px 12px;margin-top:4px;
+                                              border-radius:6px;background:#f1f3f5;color:#444;
+                                              text-decoration:none;font-size:0.9rem;">
+                                        📥 下载视频
+                                    </a>
+                                    """,
+                                    unsafe_allow_html=True
+                                )
+                            else:
+                                st.warning(f"视频 {video_idx + 1} URL无效")
+                    
+                    if not photos_list and not videos_list:
+                        st.warning("⚠️ 该阶段媒体URL无效或为空")
             else:
                 # 如果该阶段还没照片
                 if status == 'pending':
