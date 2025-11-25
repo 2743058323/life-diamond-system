@@ -177,7 +177,6 @@ exports.main = async function(event, context) {
                 order_status: '待处理',
                 current_stage: '进入实验室',
                 progress_percentage: 0,
-                estimated_completion: null,
                 notes: '',
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
@@ -221,7 +220,6 @@ exports.main = async function(event, context) {
                         stage_name: stage.stage_name,
                         status: 'pending',
                         stage_order: stage.stage_order,
-                        estimated_completion: null,
                         notes: '',
                         created_at: new Date().toISOString(),
                         updated_at: new Date().toISOString()

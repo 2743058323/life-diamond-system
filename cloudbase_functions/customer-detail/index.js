@@ -258,7 +258,6 @@ exports.main = async function(event, context) {
                         special_requirements: orderInfo.special_requirements,
                         order_status: orderInfo.order_status,
                         progress_percentage: orderInfo.progress_percentage,
-                        estimated_completion: orderInfo.estimated_completion,
                         created_at: orderInfo.created_at
                     },
                     progress_timeline: filteredProgress.map(progress => ({
@@ -267,7 +266,6 @@ exports.main = async function(event, context) {
                         status: progress.status,
                         started_at: progress.started_at,
                         completed_at: progress.completed_at,
-                        estimated_completion: progress.estimated_completion,
                         notes: progress.notes,
                         stage_order: progress.stage_order
                     })),

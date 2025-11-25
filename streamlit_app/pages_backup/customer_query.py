@@ -68,28 +68,6 @@ def show_page():
         # 否则显示订单列表
         show_search_results()
     
-    # 帮助信息
-    with st.expander("💡 使用说明"):
-        st.markdown("""
-        **如何查询订单？**
-        
-        1. 在输入框中输入订单号或联系电话
-        2. 点击"查询订单"按钮
-        3. 系统将显示匹配的所有订单
-        4. 点击具体订单可查看详细信息和制作进度
-        
-        **支持的查询方式：**
-        - **订单号**：输入完整的订单号
-        - **联系电话**：输入订单时填写的手机号码
-        
-        **注意事项：**
-        - 查询信息必须与订单时填写的完全一致
-        - 如果找不到订单，请检查输入是否正确或联系客服
-        - 系统将实时更新订单进度信息
-        
-        **提示：** 系统会自动识别您输入的是订单号还是联系电话，无需手动选择查询方式。
-        """)
-
 def detect_search_type(value: str) -> str:
     """
     自动识别查询类型
@@ -256,8 +234,6 @@ def show_order_details():
         with col3:
             st.markdown("#### ⏰ 时间信息")
             st.markdown(f"**下单时间：** {format_datetime(order_info.get('created_at', ''), 'date')}")
-            estimated = format_datetime(order_info.get('estimated_completion', ''), 'date') if order_info.get('estimated_completion') else '未设定'
-            st.markdown(f"**预计完成：** {estimated}")
             st.markdown(f"**进度：** {order_info.get('progress_percentage', 0)}%")
     
     # 特殊要求
@@ -277,18 +253,45 @@ def show_order_details():
     else:
         st.warning("暂无进度信息")
     
-    # 底部提示
+    # 使用说明 + 联系客服（详情页底部）
     st.markdown("---")
+    with st.expander("💡 使用说明"):
+        st.markdown("""
+        **如何查询订单？**
+        
+        1. 在输入框中输入订单号或联系电话  
+        2. 点击“查询订单”按钮  
+        3. 系统将显示匹配的所有订单  
+        4. 点击具体订单可查看详细信息和制作进度  
+        
+        **支持的查询方式：**
+        - **订单号**：输入完整的订单号  
+        - **联系电话**：输入订单时填写的手机号码  
+        
+        **注意事项：**
+        - 查询信息必须与订单时填写的完全一致  
+        - 如果找不到订单，请检查输入是否正确或联系客服  
+        - 系统将实时更新订单进度信息  
+        """)
+    
+    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+    
     st.markdown("""
     <div style="
+        max-width: 520px;
+        margin: 0 auto;
         text-align: center;
-        padding: 1rem;
-        background: #f8f9fa;
-        border-radius: 8px;
-        color: #666;
+        padding: 1.5rem;
+        background: linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%);
+        border-radius: 16px;
+        color: #4a4a4a;
+        border: 1px solid #e2e5ec;
+        box-shadow: 0 10px 25px rgba(149, 157, 165, 0.2);
+        font-size: 14px;
     ">
-        如有疑问或需要帮助，请联系我们的客服人员<br>
-        电话：400-123-4567 | 邮箱：support@lifediamond.com
+        <div style="font-size: 18px; font-weight: 600; margin-bottom: 0.5rem;">📞 联系客服</div>
+        <div style="margin-bottom: 0.25rem;">如有疑问或需要帮助，请联系我们的客服人员</div>
+        <div style="font-size: 16px; font-weight: 600; letter-spacing: 1px;">电话：<span style="color:#8B4B8C;">189 2273 0093</span></div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -310,7 +313,6 @@ def render_progress_with_photos(progress_data: List[Dict[str, Any]], photos_data
         status = progress.get("status", "pending")
         started_at = progress.get("started_at")
         completed_at = progress.get("completed_at")
-        estimated_completion = progress.get("estimated_completion")
         notes = progress.get("notes", "")
         
         status_info = get_status_info(status)
@@ -367,8 +369,6 @@ def render_progress_with_photos(progress_data: List[Dict[str, Any]], photos_data
                 time_info.append(f"🕐 开始：{format_datetime(started_at, 'datetime')}")
             if completed_at:
                 time_info.append(f"✅ 完成：{format_datetime(completed_at, 'datetime')}")
-            elif estimated_completion:
-                time_info.append(f"⏰ 预计：{format_datetime(estimated_completion, 'date')}")
             
             if time_info:
                 col_time1, col_time2 = st.columns(2)

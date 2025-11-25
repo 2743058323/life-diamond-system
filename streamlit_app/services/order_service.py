@@ -214,7 +214,6 @@ class OrderService:
             'progress': order.get('progress_percentage', 0),
             'current_stage': order.get('current_stage', '未开始'),
             'created_at': order.get('created_at', ''),
-            'estimated_completion': order.get('estimated_completion', ''),
         }
 
 

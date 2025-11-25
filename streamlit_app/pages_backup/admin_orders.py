@@ -231,7 +231,6 @@ def render_orders_table(orders: list):
         'order_status': '订单状态',
         'current_stage': '当前阶段',
         'progress_percentage': '进度(%)',
-        'estimated_completion': '预计完成日期',
         'notes': '备注',
         'created_at': '创建时间',
         'updated_at': '更新时间'
@@ -252,11 +251,6 @@ def render_orders_table(orders: list):
     if '更新时间' in df.columns:
         df['更新时间'] = df['更新时间'].apply(
             lambda x: format_datetime(x, 'datetime')
-        )
-    
-    if '预计完成日期' in df.columns:
-        df['预计完成日期'] = df['预计完成日期'].apply(
-            lambda x: format_datetime(x, 'date') if x and x != 'None' else ''
         )
 
     st.dataframe(
@@ -370,11 +364,7 @@ def show_create_order_form():
             )
         
         with col4:
-            estimated_completion = st.date_input(
-                "预计完成日期",
-                value=None,
-                help="选择预计完成日期（可选）"
-            )
+            pass
         
         special_requirements = st.text_area(
             "特殊要求",
@@ -409,7 +399,6 @@ def show_create_order_form():
                     "diamond_type": diamond_type,
                     "diamond_size": diamond_size,
                     "special_requirements": special_requirements,
-                    "estimated_completion": estimated_completion.isoformat() if estimated_completion else None,
                     "notes": notes
                 })
 
@@ -500,12 +489,6 @@ def show_edit_order_form(order: dict):
                 index=["待处理", "制作中", "已完成"].index(order.get('order_status', '待处理')),
                 help="选择订单状态"
             )
-            
-            estimated_completion = st.date_input(
-                "预计完成日期",
-                value=datetime.strptime(order.get('estimated_completion', ''), '%Y-%m-%d').date() if order.get('estimated_completion') and order.get('estimated_completion') != '' else None,
-                help="选择预计完成日期（可选）"
-            )
         
         special_requirements = st.text_area(
             "特殊要求",
@@ -535,7 +518,6 @@ def show_edit_order_form(order: dict):
                     "diamond_size": diamond_size,
                     "order_status": order_status,
                     "special_requirements": special_requirements,
-                    "estimated_completion": estimated_completion.isoformat() if estimated_completion else None,
                     "notes": notes
                 }
                 update_order(order.get('_id'), update_order_data)

@@ -279,35 +279,8 @@ function calculatePerformanceMetrics(orders, allProgress) {
     
     const avgCompletionDays = validOrders > 0 ? Math.round(totalDays / validOrders) : 0;
     
-    // 计算准时交付率（假设预计完成天数+30%作为准时范围）
-    let onTimeCount = 0;
-    let ordersWithEstimate = 0;
-    
-    completedOrders.forEach(order => {
-        if (order.created_at && order.estimated_completion) {
-            // 找到这个订单的所有进度
-            const orderProgresses = allProgress.filter(p => p.order_id === order._id);
-            
-            // 找到最后一个完成的阶段
-            const lastCompletedProgress = orderProgresses
-                .filter(p => p.status === 'completed' && p.completed_at)
-                .sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at))[0];
-            
-            if (lastCompletedProgress) {
-                ordersWithEstimate++;
-                const created = new Date(order.created_at);
-                const estimated = new Date(order.estimated_completion);
-                const completed = new Date(lastCompletedProgress.completed_at);
-                const deadline = new Date(estimated);
-                deadline.setDate(deadline.getDate() + Math.ceil((estimated - created) / (1000 * 60 * 60 * 24)) * 0.3); // 30%缓冲
-                if (completed <= deadline) {
-                    onTimeCount++;
-                }
-            }
-        }
-    });
-    
-    const onTimeRate = ordersWithEstimate > 0 ? onTimeCount / ordersWithEstimate : 0;
+    // 由于系统中不再维护预计完成时间，这里暂不计算准时交付率
+    const onTimeRate = 0;
     
     return {
         avg_completion_days: avgCompletionDays,

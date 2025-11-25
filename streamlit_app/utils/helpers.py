@@ -110,7 +110,6 @@ def render_progress_timeline(progress_data: List[Dict[str, Any]], current_stage:
         status = progress.get("status", "pending")
         started_at = progress.get("started_at")
         completed_at = progress.get("completed_at")
-        estimated_completion = progress.get("estimated_completion")
         notes = progress.get("notes", "")
         
         status_info = get_status_info(status)
@@ -151,8 +150,6 @@ def render_progress_timeline(progress_data: List[Dict[str, Any]], current_stage:
                 st.caption(f"🕐 开始时间：{format_datetime(started_at, 'datetime')}")
             if completed_at:
                 st.caption(f"✅ 完成时间：{format_datetime(completed_at, 'datetime')}")
-            elif estimated_completion:
-                st.caption(f"⏰ 预计完成：{format_datetime(estimated_completion, 'date')}")
             
             # 备注
             if notes:

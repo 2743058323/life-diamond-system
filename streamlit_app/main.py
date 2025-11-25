@@ -1,6 +1,7 @@
 import streamlit as st
 import sys
 import os
+from datetime import datetime
 
 # 添加当前目录到路径
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -34,6 +35,7 @@ def main():
     
     # 应用自定义样式
     apply_custom_css()
+    inject_global_footer_css()
     
     # 初始化session state
     if 'current_page' not in st.session_state:
@@ -77,12 +79,16 @@ def main():
         if selected != st.session_state.current_page:
             st.session_state.current_page = selected
             st.rerun()
+
     
     # 根据选择的页面显示内容
     if st.session_state.current_page == "客户查询":
         customer_query.show_page()
     elif st.session_state.current_page == "管理后台":
         show_admin_pages()
+    
+    # 统一底部备案信息
+    render_footer()
 
 def show_admin_pages():
     """显示管理后台页面"""
@@ -142,6 +148,46 @@ def show_admin_pages():
         admin_users.show_page()
     elif st.session_state.admin_page == "角色权限":
         admin_role_permissions.show_page()
+
+def render_footer():
+    """显示备案信息"""
+    current_year = datetime.now().year
+    footer_style = f"""
+    <div class="global-footer">
+        © {current_year} 生命钻石服务系统 |
+        <a href="https://beian.miit.gov.cn/#/Integrated/index" target="_blank" style="color:#888; text-decoration:none;">
+            粤ICP备19152413号
+        </a> |
+        <a href="https://beian.mps.gov.cn/#/query/webSearch?code=44010402001830" target="_blank" style="color:#888; text-decoration:none;">
+            粤公网安备 44010402001830号
+        </a>
+    </div>
+    """
+    st.markdown(footer_style, unsafe_allow_html=True)
+
+def inject_global_footer_css():
+    """注入主内容底部样式"""
+    css = """
+    <style>
+    .global-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 8px 0;
+        text-align: center;
+        font-size: 12px;
+        color: #888;
+        border-top: 1px solid #eee;
+        z-index: 1000;
+    }
+    .stApp {
+        padding-bottom: 60px;
+    }
+    </style>
+    """
+    st.markdown(css, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
