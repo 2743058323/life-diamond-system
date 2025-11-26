@@ -152,8 +152,7 @@ def show_maintenance_page(
         st.markdown("""
             <div class="maintenance-contact">
                 <strong>📞 如有紧急需求，请联系：</strong><br>
-                客服电话：400-XXX-XXXX<br>
-                客服邮箱：service@example.com
+                客服电话：189 2273 0093
             </div>
         """, unsafe_allow_html=True)
     
