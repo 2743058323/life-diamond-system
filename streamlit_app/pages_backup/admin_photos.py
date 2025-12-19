@@ -175,7 +175,7 @@ def show_order_selection_for_photos():
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             ">
                 <div style="font-weight: bold; color: #333; margin-bottom: 0.5rem;">
-                    {order.get('order_number', '')} - {order.get('customer_name', '')}
+                    {order.get('order_number', '')}
                 </div>
                 <div style="color: #666; font-size: 0.9rem;">
                     钻石类型：{order.get('diamond_type', '')} ({order.get('diamond_size', '')})<br>
@@ -214,7 +214,6 @@ def show_upload_form():
     <div class="metric-card">
         <h4 style="color: #8B4B8C; margin: 0; margin-bottom: 0.5rem;">订单信息</h4>
         <p style="margin: 0; color: #666;">
-            <strong>客户姓名：</strong>{order.get('customer_name', '')}<br>
             <strong>钻石类型：</strong>{order.get('diamond_type', '')} ({order.get('diamond_size', '')})<br>
             <strong>当前阶段：</strong>{order.get('current_stage', '')} (进度: {order.get('progress_percentage', 0)}%)
         </p>

@@ -97,7 +97,9 @@ def search_orders(search_type: str, search_value: str):
     }
     search_type_name = search_type_names.get(search_type, "信息")
     
-    with st.spinner(f"正在根据{search_type_name}查询订单..."):
+    # 使用新的加载组件
+    from components.loading_page import loading_context
+    with loading_context(f"正在根据{search_type_name}查询订单...", loading_type="inline"):
         result = api_client.search_orders(search_type=search_type, search_value=search_value)
         
         if result.get("success"):
@@ -173,7 +175,8 @@ def show_search_results():
 
 def load_order_details(order_id: str):
     """加载订单详情"""
-    with st.spinner("正在加载订单详情..."):
+    from components.loading_page import loading_context
+    with loading_context("正在加载订单详情...", loading_type="inline"):
         result = api_client.get_order_detail(order_id)
         
         if result.get("success"):
@@ -220,7 +223,6 @@ def show_order_details():
         
         with col1:
             st.markdown("#### 👤 客户信息")
-            st.markdown(f"**姓名：** {order_info.get('customer_name', '')}")
             st.markdown(f"**电话：** {order_info.get('customer_phone', '')}")
             if order_info.get('customer_email'):
                 st.markdown(f"**邮箱：** {order_info.get('customer_email', '')}")

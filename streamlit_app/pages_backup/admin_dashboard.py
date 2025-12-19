@@ -31,7 +31,8 @@ def load_dashboard_data():
     """加载仪表板数据"""
     # 在页面加载时或用户点击刷新时加载数据
     if 'dashboard_data' not in st.session_state or st.button("🔄 刷新数据", type="secondary", key="dashboard_refresh_top"):
-        with st.spinner("正在加载仪表板数据..."):
+        from components.loading_page import loading_context
+        with loading_context("正在加载仪表板数据...", loading_type="inline"):
             result = api_client.get_dashboard_data()
             
             if result.get("success"):

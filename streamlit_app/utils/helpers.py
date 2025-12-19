@@ -264,8 +264,21 @@ def render_photo_gallery(photos_data: List[Dict[str, Any]], title: str = "制作
                     video_url = video.get("photo_url", video.get("thumbnail_url", ""))
                     thumbnail_url = video.get("thumbnail_url", "")
                     video_desc = video.get("description", "")
-                    if not video_desc:
-                        video_desc = f"上传时间：{format_datetime(video.get('upload_time', ''), 'datetime')}"
+                    # 尝试从多个可能的字段获取时间
+                    upload_time = video.get("upload_time", video.get('created_at', video.get('upload_time', '')))
+                    
+                    # 统一显示格式：描述（如果有）| 时间
+                    info_parts = []
+                    if video_desc and video_desc.strip():
+                        info_parts.append(video_desc.strip())
+                    if upload_time:
+                        formatted_time = format_datetime(upload_time, 'datetime')
+                        # 只添加有效的时间格式（排除 "-" 和原始字符串）
+                        if formatted_time and formatted_time != "-" and formatted_time != str(upload_time):
+                            info_parts.append(formatted_time)
+                    
+                    # 如果既没有描述也没有时间，显示默认值
+                    video_info = " | ".join(info_parts) if info_parts else "视频"
                     
                     if video_url:
                         # 使用HTML video标签，设置preload="none"确保不预加载
@@ -276,7 +289,7 @@ def render_photo_gallery(photos_data: List[Dict[str, Any]], title: str = "制作
                             您的浏览器不支持视频播放。
                         </video>
                         """, unsafe_allow_html=True)
-                        st.caption(f"🎬 {video_desc}")
+                        st.caption(f"🎬 {video_info}")
                     else:
                         st.warning(f"视频 {i + 1} URL无效")
             
@@ -295,7 +308,6 @@ def render_order_card(order: Dict[str, Any], show_details: bool = True):
         <div style="font-size: 1.2rem; font-weight: bold; color: #333;">📋 {order.get('order_number', '')}</div>
         <div style="background: {status_info['color']}; color: white; padding: 4px 12px; border-radius: 15px; font-size: 0.9rem; font-weight: bold;">{status_info['icon']} {order_status}</div>
     </div>
-    <div style="margin-bottom: 0.8rem;"><span style="color: #666; font-size: 0.9rem;">👤 客户：</span><span style="color: #333; font-weight: bold; font-size: 1.05rem;">{order.get('customer_name', '')}</span></div>
     <div style="margin-bottom: 0.8rem;"><span style="color: #666; font-size: 0.9rem;">💎 钻石：</span><span style="color: #333; font-weight: 500;">{order.get('diamond_type', '')} - {order.get('diamond_size', '')}</span></div>
     <div style="margin-bottom: 0.8rem;"><span style="color: #666; font-size: 0.9rem;">🔧 当前：</span><span style="color: #333; font-weight: 500;">{order.get('current_stage', '未开始')}</span></div>
     <div style="margin-bottom: 1rem;"><span style="color: #666; font-size: 0.9rem;">📅 下单：</span><span style="color: #333;">{format_datetime(order.get('created_at', ''), 'date')}</span></div>
@@ -407,11 +419,11 @@ def apply_custom_css():
         transform: translateY(-2px);
     }
     
-    /* 让按钮容器居中 */
+    /* 让按钮容器居中（全局），减小上下外边距，避免把按钮整体推得太低 */
     .stButton {
         display: flex;
         justify-content: center;
-        margin: 1.5rem 0;
+        margin: 0.5rem 0;  /* 原来是 1.5rem，这里大幅缩小，方便卡片内对齐 */
     }
     
     /* 表单提交按钮样式 */
@@ -741,11 +753,6 @@ def validate_user_data(user_data: Dict[str, Any]) -> tuple[bool, str]:
     
     if not re.match(r'^[a-zA-Z0-9_]+$', username):
         return False, "用户名只能包含字母、数字和下划线"
-    
-    # 验证角色
-    valid_roles = ['admin', 'operator', 'viewer']
-    if user_data.get('role') not in valid_roles:
-        return False, f"角色必须是以下之一: {', '.join(valid_roles)}"
     
     # 验证邮箱
     if user_data.get('email') and not validate_email(user_data.get('email')):

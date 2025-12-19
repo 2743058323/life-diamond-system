@@ -7,8 +7,9 @@ from utils.auth import auth_manager
 def show_page():
     """显示角色权限管理页面"""
     st.title("🔐 角色权限管理")
+    st.caption("在这里集中管理后台的角色、权限，以及每个角色拥有哪些权限。")
     st.markdown("---")
-    
+
     # 检查权限
     if not auth_manager.has_permission("users.manage"):
         st.error("❌ 您没有权限访问此页面")
@@ -21,24 +22,30 @@ def show_page():
     if 'permissions_data' not in st.session_state:
         load_permissions_data()
     
-    # 初始化当前标签页
+    # 初始化当前标签页（0: 角色管理, 1: 权限管理, 2: 角色权限配置）
     if 'current_tab' not in st.session_state:
         st.session_state.current_tab = 0
     
-    # 页面导航按钮
+    # 页面导航卡片（方案 B：三块卡片式布局）
     col1, col2, col3 = st.columns(3)
     with col1:
-        if st.button("📋 角色管理", key="tab_roles", type="primary" if st.session_state.current_tab == 0 else "secondary"):
+        is_active = st.session_state.current_tab == 0
+        if st.button("📋 角色管理", key="tab_roles", type="primary" if is_active else "secondary", use_container_width=True):
             st.session_state.current_tab = 0
             st.rerun()
+        st.caption("查看、创建和编辑系统中的角色（如 管理员、客服、操作员 等）。")
     with col2:
-        if st.button("🔑 权限管理", key="tab_permissions", type="primary" if st.session_state.current_tab == 1 else "secondary"):
+        is_active = st.session_state.current_tab == 1
+        if st.button("🔑 权限管理", key="tab_permissions", type="primary" if is_active else "secondary", use_container_width=True):
             st.session_state.current_tab = 1
             st.rerun()
+        st.caption("查看系统中所有权限点，并可启用 / 禁用某些权限。")
     with col3:
-        if st.button("⚙️ 角色权限配置", key="tab_config", type="primary" if st.session_state.current_tab == 2 else "secondary"):
+        is_active = st.session_state.current_tab == 2
+        if st.button("⚙️ 角色权限配置", key="tab_config", type="primary" if is_active else "secondary", use_container_width=True):
             st.session_state.current_tab = 2
             st.rerun()
+        st.caption("为每个角色勾选具体权限，例如让客服只能看订单、不能删订单。")
     
     st.markdown("---")
     
@@ -77,69 +84,117 @@ def load_permissions_data():
         st.session_state.permissions_data = []
 
 def show_roles_management():
-    """显示角色管理"""
-    st.markdown("### 📋 角色列表")
-    
-    # 初始化按钮
-    col1, col2 = st.columns([1, 4])
-    with col1:
-        if st.button("🔄 刷新数据", help="重新加载角色数据", key="roles_refresh"):
-            load_roles_data()
-            st.rerun()
-    
-    with col2:
-        if st.button("🚀 初始化默认数据", help="创建默认的角色和权限数据"):
-            init_default_data()
-    
-    st.markdown("---")
-    
-    # 显示角色列表
+    """显示角色管理（全新布局）"""
+    st.markdown("### 📋 角色管理")
+    st.caption("先整体看一眼有哪些角色，再选择某个角色进行编辑或配置权限。")
+
     roles = st.session_state.get('roles_data', [])
-    
-    if not roles:
-        st.info("📝 暂无角色数据")
-        return
-    
-    # 角色统计
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("总角色数", len(roles))
-    with col2:
-        active_roles = len([r for r in roles if r.get('is_active', True)])
-        st.metric("启用角色", active_roles)
-    with col3:
-        st.metric("禁用角色", len(roles) - active_roles)
-    
+
+    # 顶部：概览 + 快捷操作
+    summary_col, action_col = st.columns([3, 2])
+
+    with summary_col:
+        st.markdown("#### 概览")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("角色总数", len(roles))
+        with col2:
+            active_roles = len([r for r in roles if r.get('is_active', True)])
+            st.metric("启用", active_roles)
+        with col3:
+            st.metric("禁用", len(roles) - active_roles)
+
+    with action_col:
+        st.markdown("#### 快捷操作")
+        col_a1, col_a2 = st.columns(2)
+        with col_a1:
+            if st.button("🔄 刷新", key="roles_refresh_new", help="重新加载角色数据"):
+                load_roles_data()
+                st.rerun()
+        with col_a2:
+            if st.button("🚀 初始化默认数据", key="roles_init_new", help="首次使用时一键创建默认角色和权限"):
+                init_default_data()
+
     st.markdown("---")
-    
-    # 角色表格
-    for i, role in enumerate(roles):
-        with st.container():
-            col1, col2, col3, col4 = st.columns([2, 2, 1, 1])
-            
-            with col1:
-                st.markdown(f"**{role.get('display_name', role.get('role_name', '未知角色'))}**")
-                st.caption(f"代码: {role.get('role_name', 'N/A')}")
-            
-            with col2:
-                st.markdown(f"📝 {role.get('description', '无描述')}")
-                status_color = "🟢" if role.get('is_active', True) else "🔴"
-                st.caption(f"{status_color} {'启用' if role.get('is_active', True) else '禁用'}")
-            
-            with col3:
-                if st.button("✏️", key=f"edit_role_{i}", help="编辑角色"):
-                    st.session_state.editing_role = role
+
+    # 中部：角色列表（表格视图）
+    st.markdown("#### 角色列表")
+    if not roles:
+        st.info("当前还没有任何角色，请先使用右上角的“初始化默认数据”或在下方新建角色。")
+    else:
+        table_data = []
+        for r in roles:
+            table_data.append({
+                "显示名称": r.get("display_name", r.get("role_name", "")),
+                "代码": r.get("role_name", ""),
+                "状态": "启用" if r.get("is_active", True) else "禁用",
+                "描述": r.get("description", "无描述")
+            })
+        st.table(table_data)
+
+    st.markdown("---")
+
+    # 下部：选择一个角色进行操作 + 新建角色
+    col_left, col_right = st.columns([2, 3])
+
+    with col_left:
+        st.markdown("#### 选择角色")
+        if not roles:
+            st.caption("暂无角色可选。")
+            selected_role = None
+        else:
+            options = {f"{r.get('display_name', r.get('role_name'))} ({r.get('role_name')})": r for r in roles}
+            selected_label = st.selectbox("选择一个角色", list(options.keys()))
+            selected_role = options[selected_label]
+
+        if selected_role:
+            st.markdown(f"**当前选择：{selected_role.get('display_name', selected_role.get('role_name'))}**")
+            st.caption(selected_role.get("description", "无描述"))
+
+            c1, c2 = st.columns(2)
+            with c1:
+                if st.button("✏️ 编辑这个角色", key="edit_selected_role"):
+                    st.session_state.editing_role = selected_role
                     st.rerun()
-            
-            with col4:
-                if st.button("🔧", key=f"config_permissions_{i}", help="配置权限"):
-                    st.session_state.configuring_role = role
-                    st.session_state.current_tab = 2  # 跳转到角色权限配置标签页
+            with c2:
+                if st.button("🔧 配置这个角色的权限", key="config_selected_role"):
+                    st.session_state.configuring_role = selected_role
+                    st.session_state.current_tab = 2
                     st.rerun()
-            
-            st.markdown("---")
-    
-    # 编辑角色表单
+
+    with col_right:
+        st.markdown("#### 新建角色")
+        with st.form("create_role_form_new"):
+            new_role_name = st.text_input("角色代码（英文）", placeholder="例如：finance, kefu")
+            new_display_name = st.text_input("角色名称（显示用）", placeholder="例如：财务、客服")
+            new_description = st.text_area("角色描述", placeholder="用于说明这个角色的职责范围")
+            submitted = st.form_submit_button("💾 创建角色")
+
+            if submitted:
+                if not new_role_name or not new_display_name:
+                    st.error("角色代码和角色名称不能为空")
+                else:
+                    try:
+                        user_info = auth_manager.get_user_info()
+                        created_by = user_info.get('username', 'system')
+                        result = api_client.create_role(
+                            {
+                                "role_name": new_role_name.strip(),
+                                "display_name": new_display_name.strip(),
+                                "description": new_description.strip()
+                            },
+                            created_by=created_by
+                        )
+                        if result.get("success"):
+                            st.success("✅ 角色创建成功！")
+                            load_roles_data()
+                            st.rerun()
+                        else:
+                            st.error(f"❌ 创建角色失败：{result.get('message', '未知错误')}")
+                    except Exception as e:
+                        st.error(f"❌ 创建角色异常：{str(e)}")
+
+    # 底部：编辑角色表单（仍然复用原有逻辑）
     if 'editing_role' in st.session_state:
         show_edit_role_form()
 
@@ -216,20 +271,14 @@ def toggle_permission_status(permission):
     try:
         current_status = permission.get('is_active', True)
         new_status = not current_status
-        
-        # 调试信息
-        st.write(f"🔍 调试信息 - 权限ID: {permission.get('_id')}")
-        st.write(f"🔍 调试信息 - 权限对象: {permission}")
-        
-        # 调用云函数更新权限状态
+
+        # 调用云函数更新权限状态（调试输出已移除，避免干扰界面）
         from utils.cloudbase_client import api_client
         result = api_client.update_permission_status(
             permission.get('_id'),  # 使用数据库中的实际ID
             new_status
         )
-        
-        st.write(f"🔍 调试信息 - 云函数返回: {result}")
-        
+
         if result.get('success'):
             status_text = "启用" if new_status else "禁用"
             st.success(f"✅ 权限 '{permission.get('permission_name')}' 已{status_text}！")

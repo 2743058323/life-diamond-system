@@ -11,6 +11,34 @@ from datetime import datetime
 from typing import Dict, Any
 import hashlib
 
+def _get_available_roles():
+    """从角色管理模块获取可用角色列表，用于用户角色选择"""
+    # 优先使用缓存，避免每次打开表单都请求一次
+    if "available_roles_cache" in st.session_state:
+        return st.session_state["available_roles_cache"]
+
+    try:
+        result = api_client.get_roles()
+        if result.get("success"):
+            roles = result.get("data", {}).get("roles", [])
+            # 只取启用的角色，并且有 role_name 字段
+            role_names = [
+                r.get("role_name")
+                for r in roles
+                if r.get("is_active", True) and r.get("role_name")
+            ]
+            if role_names:
+                st.session_state["available_roles_cache"] = role_names
+                return role_names
+    except Exception as e:
+        # 如果加载失败，给一个兜底选项，并给出轻量提示
+        st.warning(f"加载角色列表失败，将使用默认角色集：{e}")
+
+    fallback = ["admin", "operator", "viewer"]
+    st.session_state["available_roles_cache"] = fallback
+    return fallback
+
+
 def show_page():
     """用户管理页面"""
     # 权限检查
@@ -159,9 +187,14 @@ def show_create_user_form():
                 placeholder="再次输入密码"
             )
             
+            # 角色从角色管理模块动态加载，而不是写死三种
+            role_options = _get_available_roles()
+            default_role = "operator" if "operator" in role_options else (role_options[0] if role_options else None)
+            default_index = role_options.index(default_role) if default_role else 0
             role = st.selectbox(
                 "角色 *",
-                options=["admin", "operator", "viewer"],
+                options=role_options,
+                index=default_index,
                 format_func=translate_role,
                 help="不同角色拥有不同的系统权限"
             )
@@ -273,10 +306,17 @@ def show_edit_user_form():
             )
         
         with col2:
+            # 编辑时的角色列表同样从角色管理模块动态获取
+            role_options = _get_available_roles()
+            current_role = user.get('role', 'operator')
+            if current_role not in role_options and current_role:
+                # 确保当前用户原有角色也能被选到
+                role_options = [current_role] + [r for r in role_options if r != current_role]
+            default_index = role_options.index(current_role) if current_role in role_options else 0
             role = st.selectbox(
                 "角色 *",
-                options=["admin", "operator", "viewer"],
-                index=["admin", "operator", "viewer"].index(user.get('role', 'operator')),
+                options=role_options,
+                index=default_index,
                 format_func=translate_role,
                 help="不同角色拥有不同的系统权限"
             )

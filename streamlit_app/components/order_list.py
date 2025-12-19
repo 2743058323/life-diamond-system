@@ -33,7 +33,8 @@ def show(order_service, search="", status_filter="全部", page_size=10):
     status_value = "all" if status_filter == "全部" else status_filter
     
     # 加载订单
-    with st.spinner("加载订单列表..."):
+    from .loading_page import loading_context
+    with loading_context("加载订单列表...", loading_type="inline"):
         result = order_service.list_orders(
             page=st.session_state.order_list_page,
             limit=page_size,
@@ -72,7 +73,6 @@ def show(order_service, search="", status_filter="全部", page_size=10):
         
         # 订单信息
         order_number = order.get('order_number', 'N/A')
-        customer_name = order.get('customer_name', 'N/A')
         order_status = order.get('order_status', 'N/A')
         progress = order.get('progress_percentage', 0)
         
@@ -98,9 +98,6 @@ def show(order_service, search="", status_filter="全部", page_size=10):
                 <div style="font-weight: 600; color: #1976D2; margin-bottom: 4px;">
                     {status_icon} {order_number}
                 </div>
-                <div style="color: #424242; font-size: 0.95em; margin-bottom: 4px;">
-                    {customer_name}
-                </div>
                 <div style="color: #666; font-size: 0.85em;">
                     {order_status} | {progress}%
                 </div>
@@ -108,7 +105,7 @@ def show(order_service, search="", status_filter="全部", page_size=10):
             """, unsafe_allow_html=True)
         else:
             # 未选中状态 - 可点击按钮
-            button_label = f"{status_icon} {order_number}\n{customer_name}\n{order_status} | {progress}%"
+            button_label = f"{status_icon} {order_number}\n{order_status} | {progress}%"
             if st.button(
                 button_label,
                 key=f"order_btn_{order_id}",

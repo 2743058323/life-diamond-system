@@ -48,7 +48,7 @@ class CloudBaseClient:
                 compressed_size = len(buffer.getvalue())
                 
                 if compressed_size <= target_size:
-                    print(f"✅ 图片压缩成功: {original_size/1024:.1f}KB → {compressed_size/1024:.1f}KB (质量={q})")
+                    print(f"[成功] 图片压缩成功: {original_size/1024:.1f}KB -> {compressed_size/1024:.1f}KB (质量={q})")
                     return buffer.getvalue()
             
             # 如果还是太大，缩小尺寸
@@ -62,14 +62,14 @@ class CloudBaseClient:
                 resized_image.save(buffer, format='JPEG', quality=80, optimize=True)
                 compressed_size = len(buffer.getvalue())
                 
-                print(f"🔄 缩小尺寸: {width}x{height}, 大小: {compressed_size/1024:.1f}KB")
+                print(f"[处理] 缩小尺寸: {width}x{height}, 大小: {compressed_size/1024:.1f}KB")
                 
                 if compressed_size <= target_size or width < 200:
-                    print(f"✅ 图片压缩成功: {original_size/1024:.1f}KB → {compressed_size/1024:.1f}KB (尺寸={width}x{height})")
+                    print(f"[成功] 图片压缩成功: {original_size/1024:.1f}KB -> {compressed_size/1024:.1f}KB (尺寸={width}x{height})")
                     return buffer.getvalue()
             
         except Exception as e:
-            print(f"❌ 图片压缩失败: {str(e)}")
+            print(f"[错误] 图片压缩失败: {str(e)}")
             return file_content
 
     def _call_function(self, function_name: str, data: Dict[str, Any] = None, is_admin: bool = False) -> Dict[str, Any]:
@@ -78,7 +78,7 @@ class CloudBaseClient:
             # 使用HTTP请求调用云函数（支持is_admin参数）
             return self._call_with_http(function_name, data, is_admin)
         except Exception as e:
-            print(f"❌ 云函数调用异常: {str(e)}")
+            print(f"[错误] 云函数调用异常: {str(e)}")
             # 发生异常时返回错误信息
             return {"success": False, "message": f"云函数调用异常: {str(e)}"}
 
@@ -114,12 +114,12 @@ class CloudBaseClient:
             import json
             request_json = json.dumps(request_data)
             request_size = len(request_json.encode('utf-8'))
-            print(f"🌐 尝试调用云函数: {function_url}")
-            print(f"📊 请求数据大小: {request_size} bytes ({request_size/1024:.1f}KB)")
+            print(f"[调用] 尝试调用云函数: {function_url}")
+            print(f"[数据] 请求数据大小: {request_size} bytes ({request_size/1024:.1f}KB)")
             
             # 检查是否超过限制
             if request_size > 800 * 1024:  # 800KB限制
-                print(f"⚠️ 请求数据过大: {request_size} bytes > 800KB")
+                print(f"[警告] 请求数据过大: {request_size} bytes > 800KB")
                 return {"success": False, "message": "请求数据过大，请减少文件大小"}
             
             # 构建请求头
@@ -141,23 +141,23 @@ class CloudBaseClient:
                 timeout=10
             )
             
-            print(f"📡 响应状态: {response.status_code}")
+            print(f"[响应] 响应状态: {response.status_code}")
             
             if response.status_code == 200:
                 if response.text:
                     result = response.json()
-                    print(f"✅ 云函数调用成功: {function_name}")
+                    print(f"[成功] 云函数调用成功: {function_name}")
                     # 直接返回云函数的响应，保持success字段的原始值
                     return result
                 else:
-                    print("❌ 响应内容为空")
+                    print("[错误] 响应内容为空")
                     return {"success": False, "message": "响应内容为空"}
             else:
-                print(f"❌ HTTP请求失败: {response.status_code} - {response.text}")
+                print(f"[错误] HTTP请求失败: {response.status_code} - {response.text}")
                 return {"success": False, "message": f"HTTP请求失败: {response.status_code}"}
                 
         except Exception as e:
-            print(f"❌ HTTP调用异常: {str(e)}")
+            print(f"[错误] HTTP调用异常: {str(e)}")
             return {"success": False, "message": f"HTTP调用失败: {str(e)}"}
 
     # 客户查询接口
@@ -310,15 +310,15 @@ class CloudBaseClient:
             })
             
             if not result.get("success"):
-                print(f"❌ 获取上传URL失败: {result.get('message', '未知错误')}")
+                print(f"[错误] 获取上传URL失败: {result.get('message', '未知错误')}")
                 return result
             
             # 获取上传URL和文件信息
             upload_urls = result.get("data", {}).get("upload_urls", [])
-            print(f"✅ 获取到 {len(upload_urls)} 个上传URL")
+            print(f"[成功] 获取到 {len(upload_urls)} 个上传URL")
             
             if len(upload_urls) != len(files):
-                print(f"❌ 上传URL数量不匹配: {len(upload_urls)} vs {len(files)}")
+                print(f"[错误] 上传URL数量不匹配: {len(upload_urls)} vs {len(files)}")
                 return {"success": False, "message": "上传URL数量不匹配"}
             
             # 上传文件到云存储
@@ -328,12 +328,12 @@ class CloudBaseClient:
                     upload_url = upload_urls[i]
                     file_content = file.getvalue()
                     
-                    print(f"📤 开始上传文件 {i+1}/{len(files)}: {file.name}")
-                    print(f"📊 原始文件大小: {len(file_content)} bytes ({len(file_content)/1024:.1f}KB)")
+                    print(f"[上传] 开始上传文件 {i+1}/{len(files)}: {file.name}")
+                    print(f"[数据] 原始文件大小: {len(file_content)} bytes ({len(file_content)/1024:.1f}KB)")
 
                     # 只支持COS预签名直传，不压缩，直接使用原图
-                    print("🖼️ 使用COS预签名直传，原图上传，不压缩")
-                    print(f"🔗 上传URL: {upload_url['upload_url']}")
+                    print("[上传] 使用COS预签名直传，原图上传，不压缩")
+                    print(f"[URL] 上传URL: {upload_url['upload_url']}")
                     
                     # 验证是否为预签名URL
                     upload_method = upload_url.get("uploadMethod", "")
@@ -347,14 +347,14 @@ class CloudBaseClient:
                     )
                     
                     if not is_presigned:
-                        print(f"❌ 错误：返回的上传方式不是预签名直传")
+                        print(f"[错误] 错误：返回的上传方式不是预签名直传")
                         print(f"   uploadMethod: {upload_method}")
                         print(f"   storage_type: {storage_type}")
                         print(f"   upload_url: {upload_url_str[:100]}...")
                         return {"success": False, "message": "上传方式错误：只支持COS预签名直传，请检查云函数配置"}
                     
                     # 使用COS预签名直传方案 (PUT)，原图上传
-                    print("☁️ 使用COS预签名直传方案 (PUT)，原图上传，不压缩")
+                    print("[上传] 使用COS预签名直传方案 (PUT)，原图上传，不压缩")
                     # 直接向 COS 预签名 URL 发起 PUT
                     try:
                         import requests
@@ -362,7 +362,7 @@ class CloudBaseClient:
                         url_info = urlparse(upload_url["upload_url"])
                         
                         # 详细日志：检查URL路径
-                        print(f"🔍 解析预签名URL:")
+                        print(f"[解析] 解析预签名URL:")
                         print(f"   - 完整URL: {upload_url['upload_url'][:150]}...")
                         print(f"   - URL路径: {url_info.path}")
                         print(f"   - URL查询参数: {url_info.query[:100]}...")
@@ -392,7 +392,7 @@ class CloudBaseClient:
                         if required_host:
                             # 使用云函数明确指定的host值，确保完全匹配
                             put_headers['host'] = required_host
-                            print(f"   - ✅ 使用云函数指定的host header: {required_host}")
+                            print(f"   - [成功] 使用云函数指定的host header: {required_host}")
                         elif "q-header-list" in upload_url["upload_url"]:
                             # 解析q-header-list参数
                             import re
@@ -409,8 +409,8 @@ class CloudBaseClient:
                                             host_value = host
                                     
                                     put_headers['host'] = host_value
-                                    print(f"   - ✅ q-header-list包含host，发送host header: {host_value}")
-                                    print(f"   - ⚠️ 注意：如果签名失败，请检查host值是否与签名时完全一致")
+                                    print(f"   - [成功] q-header-list包含host，发送host header: {host_value}")
+                                    print(f"   - [警告] 注意：如果签名失败，请检查host值是否与签名时完全一致")
                                 else:
                                     print(f"   - q-header-list不包含host，不发送host header")
                             else:
@@ -422,7 +422,7 @@ class CloudBaseClient:
                         print(f"   - Content-Length: {put_headers.get('Content-Length')}")
                         
                         # 使用requests直接PUT，使用原始文件字节，保持原图质量
-                        print(f"📤 发送PUT请求到: {url_info.scheme}://{url_info.netloc}{url_info.path}")
+                        print(f"[上传] 发送PUT请求到: {url_info.scheme}://{url_info.netloc}{url_info.path}")
                         response = requests.put(
                             upload_url["upload_url"],
                             # 使用原始文件字节，保持原图质量
@@ -430,19 +430,19 @@ class CloudBaseClient:
                             headers=put_headers,
                             timeout=60
                         )
-                        print(f"📡 预签名PUT响应: {response.status_code}")
+                        print(f"[响应] 预签名PUT响应: {response.status_code}")
                         if response.status_code in [200, 201, 204]:
                             upload_success = True
                         else:
                             try:
                                 error_text = response.text[:300] if response.text else "无响应内容"
-                                print(f"🧪 预签名PUT响应体: {error_text}")
+                                print(f"[调试] 预签名PUT响应体: {error_text}")
                             except Exception:
                                 pass
                             upload_success = False
                             error_msg = f"上传失败 (HTTP {response.status_code})"
                     except Exception as e:
-                        print(f"❌ 预签名PUT上传失败: {str(e)}")
+                        print(f"[错误] 预签名PUT上传失败: {str(e)}")
                         upload_success = False
                         error_msg = f"上传异常: {str(e)}"
                     
@@ -460,15 +460,15 @@ class CloudBaseClient:
                             "media_type": upload_url.get("media_type", "photo"),  # 'photo' 或 'video'
                             "file_extension": upload_url.get("file_extension", "")  # 文件扩展名
                         })
-                        print(f"✅ 文件 {file.name} 上传成功")
+                        print(f"[成功] 文件 {file.name} 上传成功")
                     else:
                         error_msg = f"上传失败"
                         if 'response' in locals() and response:
                             error_msg += f" (HTTP {response.status_code})"
-                        print(f"❌ 文件 {file.name} {error_msg}")
+                        print(f"[错误] 文件 {file.name} {error_msg}")
                         
                 except Exception as e:
-                    print(f"❌ 上传文件 {file.name} 时出错: {str(e)}")
+                    print(f"[错误] 上传文件 {file.name} 时出错: {str(e)}")
                     continue
             
             if not uploaded_files:
@@ -486,7 +486,7 @@ class CloudBaseClient:
             })
             
         except Exception as e:
-            print(f"❌ 照片上传异常: {str(e)}")
+            print(f"[错误] 照片上传异常: {str(e)}")
             return {"success": False, "message": f"照片上传失败: {str(e)}"}
     
     def delete_photo(self, photo_id: str, reason: str = "", delete_from_storage: bool = True) -> Dict[str, Any]:

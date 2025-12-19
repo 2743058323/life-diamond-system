@@ -16,7 +16,6 @@ def show(order):
     """
     # 获取订单信息
     order_number = order.get('order_number', 'N/A')
-    customer_name = order.get('customer_name', 'N/A')
     customer_phone = order.get('customer_phone', 'N/A')
     diamond_type = order.get('diamond_type', 'N/A')
     diamond_size = order.get('diamond_size', 'N/A')
@@ -50,10 +49,6 @@ def show(order):
             </div>
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-            <div>
-                <div style="opacity: 0.9; font-size: 0.85em; margin-bottom: 4px;">👤 客户姓名</div>
-                <div style="font-size: 1.1em; font-weight: 600;">{customer_name}</div>
-            </div>
             <div>
                 <div style="opacity: 0.9; font-size: 0.85em; margin-bottom: 4px;">📞 联系方式</div>
                 <div style="font-size: 1.1em; font-weight: 600;">{customer_phone}</div>

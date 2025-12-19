@@ -68,8 +68,8 @@ def show_orders_list():
     
     with col2:
         search_query = st.text_input(
-            "搜索客户姓名",
-            placeholder="输入客户姓名",
+            "搜索订单号/电话",
+            placeholder="输入订单号或联系电话",
             key="order_search_query"
         )
     
@@ -185,27 +185,49 @@ def render_orders_cards(orders: list):
             render_order_card(order)
         
         with col2:
-            st.markdown("<br>", unsafe_allow_html=True)
-            
+            # 操作按钮区域 - 与订单卡片顶部对齐
+            # 使用 flex 布局让按钮紧贴列的顶部，并覆盖全局 .stButton 的外边距
+            button_container_id = f"btn_container_{order.get('_id', i)}"
+            st.markdown(f"""
+            <style>
+            /* 只影响当前按钮容器，不影响其他列 */
+            #{button_container_id} {{
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-start;
+                margin-top: -3.5rem;  /* 负值：抵消卡片内部的上边距，让按钮更贴近卡片顶部 */
+                padding-top: 0;
+            }}
+            /* 覆盖全局按钮容器的外边距，避免把按钮整体向下推 */
+            #{button_container_id} .stButton {{
+                margin: 0 0 0.5rem 0 !important;  /* 顶部不留空，只保留按钮之间的间距 */
+                justify-content: flex-end !important;
+            }}
+            </style>
+            <div id="{button_container_id}">
+            """, unsafe_allow_html=True)
+        
             # 查看详情按钮
-            if st.button("🔍", key=f"view_{order.get('_id', i)}", help="查看详情", type="primary"):
+            if st.button("🔍 查看", key=f"view_{order.get('_id', i)}", help="查看详情", type="primary", use_container_width=True):
                 st.session_state.selected_order_id = order.get('_id')
                 st.session_state.admin_page = "订单详情"
                 st.rerun()
             
             # 编辑按钮
             if auth_manager.has_permission("orders.update"):
-                if st.button("✏️", key=f"edit_{order.get('_id', i)}", help="编辑订单"):
+                if st.button("✏️ 编辑", key=f"edit_{order.get('_id', i)}", help="编辑订单", use_container_width=True):
                     state = OrderPageState.get()
                     state["editing_id"] = order.get('_id')
                     st.rerun()
             
             # 删除按钮
             if auth_manager.has_permission("orders.delete"):
-                if st.button("🗑️", key=f"delete_{order.get('_id', i)}", type="secondary", help="删除订单"):
+                if st.button("🗑️ 删除", key=f"delete_{order.get('_id', i)}", type="secondary", help="删除订单", use_container_width=True):
                     state = OrderPageState.get()
                     state["delete_confirm_id"] = order.get('_id')
                     st.rerun()
+            
+            st.markdown("</div>", unsafe_allow_html=True)
         
         # 显示编辑表单（如果有待编辑的订单）
         state = OrderPageState.get()
@@ -222,7 +244,7 @@ def render_orders_table(orders: list):
     """渲染订单表格（简洁版 st.dataframe）"""
     # 转换为DataFrame
     df = convert_to_dataframe(orders, {
-        'customer_name': '客户姓名',
+        'order_number': '订单编号',
         'customer_phone': '联系电话',
         'customer_email': '邮箱',
         'diamond_type': '钻石类型',
@@ -237,7 +259,7 @@ def render_orders_table(orders: list):
     })
 
     # 删除不需要的列（如果没有重命名，直接删除）
-    columns_to_drop = ['_id', 'order_number']
+    columns_to_drop = ['_id', 'customer_name', 'estimated_completion']
     for col in columns_to_drop:
         if col in df.columns:
             df = df.drop(columns=[col])
@@ -252,6 +274,11 @@ def render_orders_table(orders: list):
         df['更新时间'] = df['更新时间'].apply(
             lambda x: format_datetime(x, 'datetime')
         )
+
+    # 调整列顺序，让订单编号显示在最前面
+    if '订单编号' in df.columns:
+        cols = ['订单编号'] + [col for col in df.columns if col != '订单编号']
+        df = df[cols]
 
     st.dataframe(
         df,
@@ -439,16 +466,17 @@ def show_edit_order_form(order: dict):
         # 基本信息
         st.markdown("#### 客户信息")
         
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         
         with col1:
-            customer_name = st.text_input(
-                "客户姓名 *",
-                value=order.get('customer_name', ''),
-                placeholder="请输入客户姓名",
-                help="必填项目"
+            order_number = st.text_input(
+                "订单编号",
+                value=order.get('order_number', ''),
+                disabled=True,
+                help="订单编号不可修改"
             )
-            
+        
+        with col2:
             customer_phone = st.text_input(
                 "联系电话 *",
                 value=order.get('customer_phone', ''),
@@ -456,7 +484,7 @@ def show_edit_order_form(order: dict):
                 help="必填项目"
             )
         
-        with col2:
+        with col3:
             customer_email = st.text_input(
                 "邮箱地址",
                 value=order.get('customer_email', ''),
@@ -465,16 +493,17 @@ def show_edit_order_form(order: dict):
         
         st.markdown("#### 产品信息")
         
-        col3, col4 = st.columns(2)
+        col4, col5, col6 = st.columns(3)
         
-        with col3:
+        with col4:
             diamond_type = st.selectbox(
                 "钻石类型 *",
                 options=["纪念钻石", "定制钻石", "特殊定制"],
                 index=["纪念钻石", "定制钻石", "特殊定制"].index(order.get('diamond_type', '纪念钻石')),
                 help="选择钻石类型"
             )
-            
+        
+        with col5:
             diamond_size = st.selectbox(
                 "钻石大小 *",
                 options=["0.5克拉", "1克拉", "1.5克拉", "2克拉", "2.5克拉", "3克拉"],
@@ -482,7 +511,7 @@ def show_edit_order_form(order: dict):
                 help="选择钻石大小"
             )
         
-        with col4:
+        with col6:
             order_status = st.selectbox(
                 "订单状态 *",
                 options=["待处理", "制作中", "已完成"],
@@ -507,11 +536,11 @@ def show_edit_order_form(order: dict):
         # 提交按钮（只保留保存按钮在表单内）
         if st.form_submit_button("💾 保存修改", type="primary"):
             # 验证必填字段
-            if not all([customer_name, customer_phone, diamond_type, diamond_size]):
+            if not all([customer_phone, diamond_type, diamond_size]):
                 st.error("请填写所有必填字段（标有 * 的字段）")
             else:
+                # 保留原有的 customer_name，不在表单中显示和编辑
                 update_order_data = {
-                    "customer_name": customer_name,
                     "customer_phone": customer_phone,
                     "customer_email": customer_email,
                     "diamond_type": diamond_type,
@@ -532,7 +561,7 @@ def show_edit_order_form(order: dict):
 def show_delete_confirmation(order: dict):
     """显示删除确认"""
     st.warning(f"⚠️ 确定要删除订单 **{order.get('order_number', '')}** 吗？")
-    st.info(f"客户：{order.get('customer_name', '')} | 钻石类型：{order.get('diamond_type', '')} | 大小：{order.get('diamond_size', '')}")
+    st.info(f"钻石类型：{order.get('diamond_type', '')} | 大小：{order.get('diamond_size', '')}")
     
     col1, col2, col3 = st.columns([1, 1, 1])
     

@@ -137,7 +137,7 @@ def show_order_selection():
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             ">
                 <div style="font-weight: bold; color: #333; margin-bottom: 0.5rem;">
-                    {order.get('order_number', '')} - {order.get('customer_name', '')}
+                    {order.get('order_number', '')}
                 </div>
                 <div style="color: #666; font-size: 0.9rem;">
                     钻石类型：{order.get('diamond_type', '')} ({order.get('diamond_size', '')})<br>
@@ -202,7 +202,6 @@ def show_progress_update_form():
         <div class="metric-card">
             <h4 style="color: #8B4B8C; margin: 0; margin-bottom: 0.5rem;">当前状态</h4>
             <p style="margin: 0; color: #666;">
-                <strong>客户姓名：</strong>{order_info.get('customer_name', '')}<br>
                 <strong>当前阶段：</strong>{order_info.get('current_stage', '')}<br>
                 <strong>整体进度：</strong>{order_info.get('progress_percentage', 0)}%
             </p>
@@ -525,7 +524,8 @@ def show_all_orders_dashboard():
 
 def load_all_orders():
     """加载所有订单"""
-    with st.spinner("正在加载所有订单..."):
+    from components.loading_page import loading_context
+    with loading_context("正在加载所有订单...", loading_type="inline"):
         # 获取所有状态的订单
         all_orders = []
         
@@ -580,7 +580,6 @@ def display_order_card(order):
     """显示单个订单卡片"""
     order_id = order.get('_id', '')
     order_number = order.get('order_number', '')
-    customer_name = order.get('customer_name', '')
     current_stage = order.get('current_stage', '未开始')
     progress_percentage = order.get('progress_percentage', 0)
     order_status = order.get('order_status', '待处理')
@@ -625,8 +624,7 @@ def display_order_card(order):
             ">{order_status}</span>
             """, unsafe_allow_html=True)
         
-        # 客户和钻石信息
-        st.markdown(f"**客户：** {customer_name}")
+        # 钻石信息
         st.markdown(f"**钻石：** {diamond_type} {diamond_size}")
         st.markdown(f"**当前阶段：** {current_stage}")
         
@@ -693,7 +691,7 @@ def show_batch_update_form():
                 border-radius: 6px;
                 margin-bottom: 0.5rem;
             ">
-                <div style="font-weight: bold;">{order.get('order_number', '')} - {order.get('customer_name', '')}</div>
+                <div style="font-weight: bold;">{order.get('order_number', '')}</div>
                 <div style="color: #666; font-size: 0.9rem;">
                     当前阶段：{order.get('current_stage', '')} (进度: {order.get('progress_percentage', 0)}%)
                 </div>

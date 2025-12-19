@@ -120,14 +120,31 @@ def show(photo_service, order_id, photos_data, grouped_photos, allowed_actions, 
                 else:
                     st.warning("媒体URL缺失")
                 
-                # 媒体信息
-                if description:
-                    st.caption(f"📝 {description}")
-                if upload_time:
-                    # 导入format_datetime并格式化时间
-                    from utils.helpers import format_datetime
-                    formatted_time = format_datetime(upload_time, "datetime")
-                    st.caption(f"🕐 {formatted_time}")
+                # 媒体信息 - 统一显示格式：描述（如果有）+ 时间
+                from utils.helpers import format_datetime
+                info_parts = []
+                
+                # 如果有描述，添加描述
+                if description and description.strip():
+                    info_parts.append(description.strip())
+                
+                # 尝试获取上传时间（从多个可能的字段）
+                time_value = upload_time or photo.get('created_at', '') or photo.get('upload_time', '')
+                if time_value:
+                    formatted_time = format_datetime(time_value, "datetime")
+                    # format_datetime 如果失败会返回 "-" 或原始字符串，我们只添加有效的时间格式
+                    if formatted_time and formatted_time != "-" and formatted_time != str(time_value):
+                        info_parts.append(formatted_time)
+                
+                # 统一显示：描述 | 时间 或 仅时间 或 仅描述
+                # 如果既没有描述也没有时间，至少显示媒体类型
+                if info_parts:
+                    display_text = " | ".join(info_parts)
+                    st.caption(f"📝 {display_text}")
+                else:
+                    # 如果完全没有信息，显示媒体类型作为默认
+                    media_label = "视频" if media_type == 'video' else "照片"
+                    st.caption(f"📝 {media_label}")
                 
                 # 删除按钮
                 if 'delete_photo' in allowed_actions:
@@ -213,8 +230,8 @@ def show_upload_modal(photo_service, order_id, progress_data, on_upload):
         # 描述
         description = st.text_area(
             "描述（可选）",
-            placeholder="简要描述内容",
-            help="选填，方便客户了解内容"
+            placeholder="简要描述内容，例如：制作过程细节",
+            help="选填，方便客户了解内容。如果不填写，将只显示上传时间"
         )
         
         # 文件上传 - 支持照片和视频
@@ -266,12 +283,15 @@ def show_upload_modal(photo_service, order_id, progress_data, on_upload):
                     st.error(f"❌ {error_msg}")
                 else:
                     with st.spinner(f"正在上传 {len(uploaded_files)} 个文件..."):
+                        # 使用用户填写的描述，如果不填写则为空字符串
+                        final_description = description.strip() if description and description.strip() else ""
+                        
                         result = photo_service.upload_photos(
                             order_id=order_id,
                             stage_id=selected_stage_id,
                             stage_name=selected_stage_name,
                             photos=uploaded_files,
-                            description=description
+                            description=final_description
                         )
                     
                     if result.get('success'):

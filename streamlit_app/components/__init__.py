@@ -8,11 +8,13 @@ from . import order_info_card
 from . import order_list
 from . import progress_timeline
 from . import photo_gallery
+from . import loading_page
 
 __all__ = [
     'order_info_card',
     'order_list',
     'progress_timeline',
-    'photo_gallery'
+    'photo_gallery',
+    'loading_page'
 ]
 

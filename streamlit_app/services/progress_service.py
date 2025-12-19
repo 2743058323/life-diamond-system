@@ -142,12 +142,13 @@ class ProgressService:
                     stage_name = p.get('stage_name', '')
                     break
             
+            # 上传照片时不自动生成描述，让用户自己决定
             photo_result = photo_service.upload_photos(
                 order_id=order_id,
                 stage_id=stage_id,
                 stage_name=stage_name,
                 photos=photos,
-                description=f"{stage_name}完成媒体"
+                description=""  # 不自动生成描述
             )
         
         # 合并结果
